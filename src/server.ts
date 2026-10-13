@@ -45,8 +45,8 @@ const StartServer = () => {
 
     // Protegidas: primero VerifyToken comprueba el token (401 si falta o no vale)
     // y despues RequireRole comprueba el rol (403 si no es admin)
-    router.use('/authors', VerifyToken, RequireRole('admin'), authorRoutes);
-    router.use('/books', VerifyToken, RequireRole('admin'), bookRoutes);
+    router.use('/authors', VerifyToken, RequireRole('ADMIN'), authorRoutes);
+    router.use('/books', VerifyToken, RequireRole('ADMIN'), bookRoutes);
     // La lista de usuarios es para el chat, así que cualquier usuario autenticado puede consultarla.
     router.use('/users', VerifyToken, userRoutes);
 

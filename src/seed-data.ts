@@ -13,13 +13,13 @@ export const usersSeed: IUser[] = [
         name: 'Admin',
         email: 'admin@example.com',
         password: 'seminari7',
-        role: 'admin'
+        role: 'ADMIN'
     },
     {
         name: 'Usuario',
         email: 'user@example.com',
         password: 'seminari7',
-        role: 'user'
+        role: 'USER'
     }
 ];
 
