@@ -4,7 +4,9 @@ import { NextFunction, Request, Response } from 'express';
 
 import { IAuthor } from '../models/Author';
 import { BOOK_LANGUAGES, BOOK_TAGS, IBook } from '../models/Book';
-import { IUser } from '../models/User';
+import { EXERCISE_CATEGORIES, IExercise } from '../models/Exercise';
+import { DAYS_OF_WEEK, IWorkout } from '../models/Workout';
+import { IUser, USER_ROLES } from '../models/User';
 
 export interface PaginationQuery {
     page: number;
@@ -198,6 +200,92 @@ export const Schemas = {
 
             //El campo de descripcion es opcional y puede ser un string vacio
             description: Joi.string().allow('').optional().example('Sinopsis o descripción del libro')
+        })
+    },
+
+    // Validaciones relacionadas con los ejercicios
+    exercise: {
+        // Esquema que se utiliza cuando queremos crear un ejercicio
+        create: Joi.object<IExercise>({
+            // El nombre es obligatorio y debe ser un texto
+            name: Joi.string().trim().required().example('Press de banca'),
+
+            // La categoria es obligatoria y solo puede ser una de las permitidas
+            category: Joi.string().valid(...EXERCISE_CATEGORIES).required().example('CHEST'),
+
+            // Las series son opcionales y no pueden ser negativas
+            sets: Joi.number().integer().min(0).example(4),
+
+            // Las repeticiones tambien son opcionales y no pueden ser negativas
+            reps: Joi.number().integer().min(0).example(10)
+        }),
+
+        // Esquema que se utiliza para actualizar un ejercicio
+        update: Joi.object<IExercise>({
+            // Estos campos son obligatorios tambien al actualizar
+            name: Joi.string().trim().required(),
+            category: Joi.string().valid(...EXERCISE_CATEGORIES).required(),
+
+            // El resto de campos son opcionales
+            sets: Joi.number().integer().min(0),
+            reps: Joi.number().integer().min(0)
+        })
+    },
+
+    // Validaciones relacionadas con las rutinas
+    workout: {
+        // Esquema que se utiliza cuando queremos crear una rutina
+        create: Joi.object<IWorkout>({
+            // El nombre es obligatorio
+            name: Joi.string().trim().required().example('Dia de pecho'),
+
+            // La descripcion es opcional y puede ser un string vacio
+            description: Joi.string().allow('').optional().example('Rutina corta para el gimnasio'),
+
+            // El dia de la semana es obligatorio y solo puede ser uno de los permitidos
+            dayOfWeek: Joi.string().valid(...DAYS_OF_WEEK).required().example('MONDAY'),
+
+            // Los ejercicios son opcionales y cada uno tiene que ser un id valido de MongoDB
+            exercises: Joi.array().items(Joi.string().regex(OBJECT_ID)).example(['6ab2d1ad9ada2730451295a7'])
+        }),
+
+        // Esquema que se utiliza para actualizar una rutina
+        update: Joi.object<IWorkout>({
+            // Estos campos son obligatorios tambien al actualizar
+            name: Joi.string().trim().required(),
+            dayOfWeek: Joi.string().valid(...DAYS_OF_WEEK).required(),
+
+            // El resto de campos son opcionales
+            description: Joi.string().allow('').optional(),
+            exercises: Joi.array().items(Joi.string().regex(OBJECT_ID))
+        })
+    },
+
+    // Validaciones relacionadas con los usuarios del backoffice
+    user: {
+        // Esquema que se utiliza cuando un admin crea un usuario
+        create: Joi.object<IUser>({
+            // El nombre y el email son obligatorios
+            name: Joi.string().trim().required().example('Ana'),
+            email: Joi.string().email().required().example('ana@example.com'),
+
+            // La contraseña es obligatoria al crear y tiene que tener al menos 8 caracteres
+            password: Joi.string().min(8).required().example('seminari7'),
+
+            // El rol es opcional: si no se indica, el modelo asigna USER
+            role: Joi.string().valid(...USER_ROLES).example('USER')
+        }),
+
+        // Esquema que se utiliza para actualizar un usuario.
+        // La contraseña es opcional: si no llega, el hook pre-save no la vuelve a cifrar
+        update: Joi.object<IUser>({
+            // Estos campos son obligatorios tambien al actualizar
+            name: Joi.string().trim().required(),
+            email: Joi.string().email().required(),
+
+            // El resto de campos son opcionales
+            password: Joi.string().min(8),
+            role: Joi.string().valid(...USER_ROLES)
         })
     }
 };
