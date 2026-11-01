@@ -37,8 +37,26 @@ export const createWorkout = (data: NewWorkout): Promise<WorkoutDocument> => {
 // el populate mantiene una lista vacia. Devuelve null si la rutina no existe.
 export const getWorkoutById = (workoutId: string): Promise<WorkoutDocument | null> => {
 
-    // Buscamos la rutina por ID y cargamos sus ejercicios referenciados
-    return Workout.findById(workoutId).populate('exercises');
+    // Buscamos la rutina por ID y cargamos sus ejercicios referenciados.
+    // Filtramos isDeleted: false: una rutina borrada logicamente no se puede leer, y
+    // los ejercicios borrados logicamente no salen dentro de la rutina
+    return Workout.findOne({ _id: workoutId, isDeleted: false }).populate({ path: 'exercises', match: { isDeleted: false } });
+
+};
+
+// Borrado logico: la rutina sigue en la base de datos, pero marcada como borrada.
+// Deja de salir en los listados y su nombre queda libre. Devuelve null si no existe o ya estaba borrada.
+export const softDeleteWorkout = (workoutId: string): Promise<WorkoutDocument | null> => {
+
+    return Workout.findOneAndUpdate({ _id: workoutId, isDeleted: false }, { isDeleted: true, deletedAt: new Date() }, { new: true });
+
+};
+
+// Borrado definitivo: la rutina desaparece de la base de datos para siempre.
+// Los ejercicios de la rutina no se borran. Funciona tambien con rutinas ya borradas logicamente.
+export const hardDeleteWorkout = (workoutId: string): Promise<WorkoutDocument | null> => {
+
+    return Workout.findByIdAndDelete(workoutId);
 
 };
 
@@ -85,7 +103,7 @@ export const listWorkouts = async ({ page, limit, search, dayOfWeek, sort, order
     // Pedimos la pagina y el total a la vez, con el MISMO filtro
     const [workouts, total] = await Promise.all([
         // Ordenamos por la columna pedida (por defecto el nombre)
-        Workout.find(filter).sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).populate('exercises'),
+        Workout.find(filter).sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).populate({ path: 'exercises', match: { isDeleted: false } }),
         Workout.countDocuments(filter)
     ]);
 
@@ -101,6 +119,10 @@ export default {
     getWorkoutById,
 
     updateWorkout,
+
+    softDeleteWorkout,
+
+    hardDeleteWorkout,
 
     listWorkouts
 

@@ -27,8 +27,26 @@ export const createUser = (data: NewUser): Promise<HydratedDocument<IUserModel>>
 // Funcion que busca un usuario por su ID en la base de datos
 export const getUserById = (userId: string): Promise<HydratedDocument<IUserModel> | null> => {
 
-    // Buscamos el usuario usando el ID que hemos recibido
-    return User.findById(userId);
+    // Buscamos el usuario usando el ID que hemos recibido.
+    // Filtramos isDeleted: false para que un usuario borrado logicamente no se pueda leer
+    return User.findOne({ _id: userId, isDeleted: false });
+
+};
+
+// Borrado logico: el usuario sigue en la base de datos, pero marcado como borrado.
+// Deja de salir en los listados y su email queda libre (indice unico parcial del modelo).
+// Devuelve null si no existe o ya estaba borrado.
+export const softDeleteUser = (userId: string): Promise<HydratedDocument<IUserModel> | null> => {
+
+    return User.findOneAndUpdate({ _id: userId, isDeleted: false }, { isDeleted: true, deletedAt: new Date() }, { new: true });
+
+};
+
+// Borrado definitivo: el usuario desaparece de la base de datos para siempre.
+// Funciona tambien con usuarios ya borrados logicamente. Devuelve null si no existe.
+export const hardDeleteUser = (userId: string): Promise<HydratedDocument<IUserModel> | null> => {
+
+    return User.findByIdAndDelete(userId);
 
 };
 
@@ -95,6 +113,10 @@ export default {
     getUserById,
 
     updateUser,
+
+    softDeleteUser,
+
+    hardDeleteUser,
 
     listUsers
 
