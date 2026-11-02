@@ -18,7 +18,7 @@ export const getBookById = (bookId: string) => {
 };
 
 // Funcion que busca una pagina de libros y cuenta los que no estan borrados
-export const getAllBooks = (page: number, limit: number, search = '') => {
+export const getAllBooks = (page: number, limit: number, search = '', sort = '', order = 'asc') => {
     const searchRegex = search ? new RegExp(escapeRegExp(search), 'i') : undefined;
     const filter = {
         deleted: false,
@@ -27,12 +27,39 @@ export const getAllBooks = (page: number, limit: number, search = '') => {
             : {})
     };
 
-    return Promise.all([
-        Book.find(filter)
+    // Columnas por las que se permite ordenar. Si llega otra, se ordena por _id como antes
+    const sortableFields = ['title', 'language', 'publishedYear', 'price'];
+    const direction = order === 'desc' ? -1 : 1;
+
+    // Los libros de la pagina: si ordenamos por autores hace falta una consulta especial
+    let booksPage;
+    if (sort === 'authors') {
+        // Ordenamos por el nombre del primer autor de cada libro. Para eso unimos cada libro con sus autores
+        booksPage = Book.aggregate([
+            { $match: filter },
+            { $lookup: { from: 'authors', localField: 'authors', foreignField: '_id', as: 'authorDocs' } },
+            { $addFields: { firstAuthorName: { $arrayElemAt: ['$authorDocs.name', 0] } } },
+            { $sort: { firstAuthorName: direction, _id: 1 } },
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            { $project: { authorDocs: 0, firstAuthorName: 0 } }
+        ])
+            .collation({ locale: 'es' })
+            // El aggregate no rellena los autores, los rellenamos aqui como hace find
+            .then((books) => Book.populate(books, { path: 'authors' }));
+    } else {
+        // Desempatamos con _id para que las paginas no repitan ni pierdan libros
+        const sortBy: Record<string, 1 | -1> = sortableFields.includes(sort) ? { [sort]: direction, _id: 1 } : { _id: 1 };
+        booksPage = Book.find(filter)
+            .collation({ locale: 'es' })
             .populate('authors')
-            .sort({ _id: 1 })
+            .sort(sortBy)
             .skip((page - 1) * limit)
-            .limit(limit),
+            .limit(limit);
+    }
+
+    return Promise.all([
+        booksPage,
         Book.countDocuments(filter)
     ]).then(([books, total]) => ({
         books,

@@ -79,6 +79,14 @@ router.get('/:authorId', ValidateId('authorId'), controller.readAuthor);
  *         name: search
  *         schema: { type: string, maxLength: 100 }
  *         description: Buscar por nombre o email
+ *       - in: query
+ *         name: sort
+ *         schema: { type: string, maxLength: 30 }
+ *         description: 'Campo por el que ordenar (name, email, nationality, birthDate, active)'
+ *       - in: query
+ *         name: order
+ *         schema: { type: string, enum: [asc, desc], default: asc }
+ *         description: Sentido del orden
  *     responses:
  *       200: { $ref: '#/components/responses/AuthorList' }
  *       400: { $ref: '#/components/responses/InvalidPagination' }

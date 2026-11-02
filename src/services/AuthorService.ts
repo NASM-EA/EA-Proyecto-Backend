@@ -22,16 +22,23 @@ export const getAuthorById = (authorId: string) => {
 };
 
 // Funcion que busca una pagina de autores y cuenta los que no estan borrados
-export const getAllAuthors = (page: number, limit: number, search = '') => {
+export const getAllAuthors = (page: number, limit: number, search = '', sort = '', order = 'asc') => {
     const searchRegex = search ? new RegExp(escapeRegExp(search), 'i') : undefined;
     const filter = {
         deleted: false,
         ...(searchRegex ? { $or: [{ name: searchRegex }, { email: searchRegex }] } : {})
     };
 
+    // Columnas por las que se permite ordenar. Si llega otra, se ordena por _id como antes
+    const sortableFields = ['name', 'email', 'nationality', 'birthDate', 'active'];
+    const direction = order === 'desc' ? -1 : 1;
+    // Desempatamos con _id para que las paginas no repitan ni pierdan autores
+    const sortBy: Record<string, 1 | -1> = sortableFields.includes(sort) ? { [sort]: direction, _id: 1 } : { _id: 1 };
+
     return Promise.all([
         Author.find(filter)
-            .sort({ _id: 1 })
+            .collation({ locale: 'es' })
+            .sort(sortBy)
             .skip((page - 1) * limit)
             .limit(limit),
         Author.countDocuments(filter)

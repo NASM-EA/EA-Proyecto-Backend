@@ -10,6 +10,9 @@ export interface PaginationQuery {
     page: number;
     limit: number;
     search: string;
+    // Campo por el que ordenar y sentido del orden (asc o desc)
+    sort: string;
+    order: 'asc' | 'desc';
 }
 
 // Funcion que se encarga de validar los datos que llegan en una petición
@@ -57,7 +60,10 @@ export const Schemas = {
     pagination: Joi.object<PaginationQuery>({
         page: Joi.number().integer().min(1).default(1),
         limit: Joi.number().integer().min(1).max(100).default(5),
-        search: Joi.string().trim().max(100).allow('').default('')
+        search: Joi.string().trim().max(100).allow('').default(''),
+        // Columna por la que ordenar (el servicio ignora las que no permite) y sentido del orden
+        sort: Joi.string().trim().max(30).allow('').default(''),
+        order: Joi.string().valid('asc', 'desc').default('asc')
     }),
 
     // Validaciones de las rutas de autenticacion

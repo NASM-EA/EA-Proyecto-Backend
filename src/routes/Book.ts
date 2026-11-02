@@ -80,6 +80,14 @@ router.get('/:bookId', ValidateId('bookId'), controller.readBook);
  *         name: search
  *         schema: { type: string, maxLength: 100 }
  *         description: Buscar por título, ISBN o descripción
+ *       - in: query
+ *         name: sort
+ *         schema: { type: string, maxLength: 30 }
+ *         description: 'Campo por el que ordenar (title, authors, language, publishedYear, price)'
+ *       - in: query
+ *         name: order
+ *         schema: { type: string, enum: [asc, desc], default: asc }
+ *         description: Sentido del orden
  *     responses:
  *       200: { $ref: '#/components/responses/BookList' }
  *       400: { $ref: '#/components/responses/InvalidPagination' }

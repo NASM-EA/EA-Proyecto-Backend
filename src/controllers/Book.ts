@@ -44,8 +44,8 @@ const readBook = async (req: Request<{ bookId: string }>, res: Response, next: N
 const readAll = async (req: Request, res: Response<unknown, { query: PaginationQuery }>, next: NextFunction) => {
     try {
         // Pedimos al servicio la pagina de libros y el total de libros no borrados
-        const { page, limit, search } = res.locals.query;
-        const result = await BookService.getAllBooks(page, limit, search);
+        const { page, limit, search, sort, order } = res.locals.query;
+        const result = await BookService.getAllBooks(page, limit, search, sort, order);
 
         // Devolvemos los libros junto con los datos de paginacion
         res.status(200).json(result);
