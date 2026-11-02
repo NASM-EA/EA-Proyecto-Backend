@@ -63,5 +63,18 @@ const updateExercise = async (req: Request<{ exerciseId: string }>, res: Respons
     }
 };
 
+// Función para listar ejercicios con paginación y buscador
+const listExercises = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+        // ValidateQuery ya ha comprobado y convertido los parametros de la URL
+        const result = await ExerciseService.listExercises(res.locals.query);
+
+        // Devolvemos la pagina de ejercicios junto con los datos de paginacion
+        res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Exportamos todas las funciones para poder utilizarlas desde las rutas
-export default { createExercise, readExercise, updateExercise };
+export default { createExercise, readExercise, updateExercise, listExercises };
