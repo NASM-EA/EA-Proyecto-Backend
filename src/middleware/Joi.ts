@@ -2,15 +2,9 @@ import Joi, { ObjectSchema } from 'joi';
 
 import { NextFunction, Request, Response } from 'express';
 
-import { IAuthor } from '../models/Author';
-import { BOOK_LANGUAGES, BOOK_TAGS, IBook } from '../models/Book';
-import { IUser } from '../models/User';
-
-export interface PaginationQuery {
-    page: number;
-    limit: number;
-    search: string;
-}
+import { EXERCISE_CATEGORIES, IExercise } from '../models/Exercise';
+import { DAYS_OF_WEEK, IWorkout } from '../models/Workout';
+import { IUser, USER_ROLES } from '../models/User';
 
 // Funcion que se encarga de validar los datos que llegan en una petición
 // Recibe un esquema de Joi y comprueba que el body cumple sus condiciones
@@ -53,13 +47,6 @@ export const ValidateId = (paramName: string) => {
 
 // Aqui tenemos todos los esquemas de validacion que utilizamos en la aplicacion
 export const Schemas = {
-    // Validacion de los parametros de paginacion
-    pagination: Joi.object<PaginationQuery>({
-        page: Joi.number().integer().min(1).default(1),
-        limit: Joi.number().integer().min(1).max(100).default(5),
-        search: Joi.string().trim().max(100).allow('').default('')
-    }),
-
     // Validaciones de las rutas de autenticacion
     auth: {
         // Registro: nombre, email y contraseña.
@@ -84,131 +71,89 @@ export const Schemas = {
         })
     },
 
-    // Validaciones relacionadas con los autores
-    author: {
-        // Esquema que se utiliza cuando queremos crear un autor
-        create: Joi.object<IAuthor>({
+    // Validaciones relacionadas con los ejercicios
+    exercise: {
+        // Esquema que se utiliza cuando queremos crear un ejercicio
+        create: Joi.object<IExercise>({
             // El nombre es obligatorio y debe ser un texto
-            name: Joi.string().required().example('Ursula K. Le Guin'),
+            name: Joi.string().trim().required().example('Press de banca'),
 
-            // El email es obligatorio y tiene que tener un formato de email valido
-            email: Joi.string().email().required().example('leguin@example.com'),
+            // La categoria es obligatoria y solo puede ser una de las permitidas
+            category: Joi.string().valid(...EXERCISE_CATEGORIES).required().example('CHEST'),
 
-            // La fecha de nacimiento es opcional y debe ser una fecha
-            birthDate: Joi.date(),
+            // Las series son opcionales y no pueden ser negativas
+            sets: Joi.number().integer().min(0).example(4),
 
-            // La nacionalidad es un texto y es opcional
-            nationality: Joi.string(),
-
-            // La biografia es opcional y no puede superar los 1000 caracteres
-            biography: Joi.string().max(1000),
-
-            // La pagina web debe tener un formato de URL valido
-            website: Joi.string().uri(),
-
-            // La foto tambien debe ser una URL valida
-            photoUrl: Joi.string().uri(),
-
-            // Indica si el autor esta activo o no
-            active: Joi.boolean()
+            // Las repeticiones tambien son opcionales y no pueden ser negativas
+            reps: Joi.number().integer().min(0).example(10)
         }),
 
-        // Esquema que se utiliza para actualizar un autor
-        update: Joi.object<IAuthor>({
+        // Esquema que se utiliza para actualizar un ejercicio
+        update: Joi.object<IExercise>({
             // Estos campos son obligatorios tambien al actualizar
-            name: Joi.string().required(),
-            email: Joi.string().email().required(),
+            name: Joi.string().trim().required(),
+            category: Joi.string().valid(...EXERCISE_CATEGORIES).required(),
 
             // El resto de campos son opcionales
-            birthDate: Joi.date(),
-            nationality: Joi.string(),
-            biography: Joi.string().max(1000),
-            website: Joi.string().uri(),
-            photoUrl: Joi.string().uri(),
-            active: Joi.boolean()
+            sets: Joi.number().integer().min(0),
+            reps: Joi.number().integer().min(0)
         })
     },
 
-    // Validaciones relacionadas con los libros
-    book: {
-        // Esquema que se utiliza cuando queremos crear un libro
-        create: Joi.object<IBook>({
-            // El titulo es obligatorio
-            title: Joi.string().required().example('A Wizard of Earthsea'),
+    // Validaciones relacionadas con las rutinas
+    workout: {
+        // Esquema que se utiliza cuando queremos crear una rutina
+        create: Joi.object<IWorkout>({
+            // El nombre es obligatorio
+            name: Joi.string().trim().required().example('Dia de pecho'),
 
-            // El libro tiene que tener como minimo un autor
-            // Ademas cada autor debe tener un id con formato valido de MongoDB
-            authors: Joi.array().items(Joi.string().regex(OBJECT_ID)).min(1).required().example(['6ab2d1ad9ada2730451295a7']),
+            // La descripcion es opcional y puede ser un string vacio
+            description: Joi.string().allow('').optional().example('Rutina corta para el gimnasio'),
 
-            // El ISBN es obligatorio
-            isbn: Joi.string().required().example('9788400000008'),
+            // El dia de la semana es obligatorio y solo puede ser uno de los permitidos
+            dayOfWeek: Joi.string().valid(...DAYS_OF_WEEK).required().example('MONDAY'),
 
-            // La edicion tiene que ser como minimo la numero 1
-            edition: Joi.number().min(1),
-
-            // El resto de estos datos son opcionales
-            publisher: Joi.string(),
-
-            // El año de publicacion debe estar entre 1450 y 2100
-            publishedYear: Joi.number().min(1450).max(2100),
-
-            // El numero de paginas tiene que ser como minimo 1
-            pages: Joi.number().min(1),
-
-            // El idioma tiene que ser uno de los idiomas permitidos
-            language: Joi.string().valid(...BOOK_LANGUAGES),
-
-            // Los tags tienen que pertenecer a la lista de tags permitidos
-            tags: Joi.array().items(Joi.string().valid(...BOOK_TAGS)),
-
-            // El precio no puede ser negativo
-            price: Joi.number().min(0),
-
-            //El campo de descripcion es opcional y puede ser un string vacio
-            description: Joi.string().allow('').optional().example('Sinopsis o descripción del libro')
+            // Los ejercicios son opcionales y cada uno tiene que ser un id valido de MongoDB
+            exercises: Joi.array().items(Joi.string().regex(OBJECT_ID)).example(['6ab2d1ad9ada2730451295a7'])
         }),
 
-        // Esquema que se utiliza para actualizar un libro
-        update: Joi.object<IBook>({
-            // Estos campos son obligatorios al actualizar el libro
-            title: Joi.string().required(),
-            authors: Joi.array().items(Joi.string().regex(OBJECT_ID)).min(1).required(),
-            isbn: Joi.string().required(),
+        // Esquema que se utiliza para actualizar una rutina
+        update: Joi.object<IWorkout>({
+            // Estos campos son obligatorios tambien al actualizar
+            name: Joi.string().trim().required(),
+            dayOfWeek: Joi.string().valid(...DAYS_OF_WEEK).required(),
 
-            // La edicion no puede ser menor que 1
-            edition: Joi.number().min(1),
+            // El resto de campos son opcionales
+            description: Joi.string().allow('').optional(),
+            exercises: Joi.array().items(Joi.string().regex(OBJECT_ID))
+        })
+    },
 
-            // Datos opcionales del libro
-            publisher: Joi.string(),
+    // Validaciones relacionadas con los usuarios del backoffice
+    user: {
+        // Esquema que se utiliza cuando un admin crea un usuario
+        create: Joi.object<IUser>({
+            // El nombre y el email son obligatorios
+            name: Joi.string().trim().required().example('Ana'),
+            email: Joi.string().email().required().example('ana@example.com'),
 
-            // Comprobamos que el año esta dentro del rango permitido
-            publishedYear: Joi.number().min(1450).max(2100),
+            // La contraseña es obligatoria al crear y tiene que tener al menos 8 caracteres
+            password: Joi.string().min(8).required().example('seminari7'),
 
-            // El numero de paginas debe ser mayor que 0
-            pages: Joi.number().min(1),
+            // El rol es opcional: si no se indica, el modelo asigna USER
+            role: Joi.string().valid(...USER_ROLES).example('USER')
+        }),
 
-            // El idioma tiene que estar dentro de los permitidos
-            language: Joi.string().valid(...BOOK_LANGUAGES),
+        // Esquema que se utiliza para actualizar un usuario.
+        // La contraseña es opcional: si no llega, el hook pre-save no la vuelve a cifrar
+        update: Joi.object<IUser>({
+            // Estos campos son obligatorios tambien al actualizar
+            name: Joi.string().trim().required(),
+            email: Joi.string().email().required(),
 
-            // Los tags tienen que ser valores permitidos
-            tags: Joi.array().items(Joi.string().valid(...BOOK_TAGS)),
-
-            // El precio no puede ser negativo
-            price: Joi.number().min(0),
-
-            //El campo de descripcion es opcional y puede ser un string vacio
-            description: Joi.string().allow('').optional().example('Sinopsis o descripción del libro')
+            // El resto de campos son opcionales
+            password: Joi.string().min(8),
+            role: Joi.string().valid(...USER_ROLES)
         })
     }
-};
-
-export const ValidatePagination = (req: Request, res: Response, next: NextFunction) => {
-    const { error, value } = Schemas.pagination.validate(req.query);
-
-    if (error) {
-        return res.status(400).json({ message: error.details[0].message });
-    }
-
-    res.locals.query = value;
-    next();
 };

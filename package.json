@@ -1,7 +1,7 @@
 {
     "name": "ea-seminari7-jwt-websockets-backend",
     "version": "1.0.0",
-    "description": "API REST de autores y libros del Seminario 7 de EA: Express, TypeScript y MongoDB, con JWT y WebSockets",
+    "description": "API REST de ejercicios, rutinas y usuarios del Seminario 7 de EA: Express, TypeScript y MongoDB, con JWT y WebSockets",
     "main": "src/server.ts",
     "type": "commonjs",
     "engines": {
@@ -12,8 +12,7 @@
         "build": "tsc",
         "start": "node build/server.js",
         "seed": "tsx src/seed.ts",
-        "migrate-indexes": "tsx src/migrate-indexes.ts",
-        "migrate-authors": "tsx src/migrate-authors.ts",
+        "migrate-roles": "tsx src/migrate-roles.ts",
         "lint": "oxlint src",
         "lint:fix": "oxlint src --fix"
     },

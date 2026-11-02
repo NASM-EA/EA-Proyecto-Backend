@@ -9,8 +9,8 @@ import ErrorHandler from './middleware/ErrorHandler';
 import { VerifyToken } from './middleware/VerifyToken';
 import { RequireRole } from './middleware/RequireRole';
 import authRoutes from './routes/Auth';
-import authorRoutes from './routes/Author';
-import bookRoutes from './routes/Book';
+import exerciseRoutes from './routes/Exercise';
+import workoutRoutes from './routes/Workout';
 import swaggerUi from 'swagger-ui-express'; // permite mostrar Swagger en el navegador.
 import swaggerDocument from './config/swagger'; // importa el documento que hemos creado en swagger.ts
 import { Server } from 'socket.io';
@@ -44,10 +44,13 @@ const StartServer = () => {
     router.use('/auth', authRoutes);
 
     // Protegidas: primero VerifyToken comprueba el token (401 si falta o no vale)
-    // y despues RequireRole comprueba el rol (403 si no es admin)
-    router.use('/authors', VerifyToken, RequireRole('admin'), authorRoutes);
-    router.use('/books', VerifyToken, RequireRole('admin'), bookRoutes);
+    // y despues RequireRole comprueba el rol (403 si no es admin).
+    // Los ejercicios y las rutinas son datos del backoffice: solo los toca un admin.
+    router.use('/exercises', VerifyToken, RequireRole('ADMIN'), exerciseRoutes);
+    router.use('/workouts', VerifyToken, RequireRole('ADMIN'), workoutRoutes);
     // La lista de usuarios es para el chat, así que cualquier usuario autenticado puede consultarla.
+    // Las escrituras (POST y PUT) y el detalle por id son solo para ADMIN, y eso se comprueba
+    // en src/routes/Users.ts, porque aquí el montaje es el mismo para todas las rutas del router.
     router.use('/users', VerifyToken, userRoutes);
 
     // La documentacion y el healthcheck son publicos
@@ -147,14 +150,14 @@ io.on('connection', (socket) => {
         }
 
         try {
-            // El autor sale del JWT verificado, nunca de los datos enviados por el cliente.
+            // El usuario que escribe sale del JWT verificado, nunca de los datos enviados por el cliente.
             const message = await Message.create({
                 room,
                 user: userId,
                 text
             });
 
-            // Cargamos el nombre del autor para enviar datos parecidos a los del historial.
+            // Cargamos el nombre del usuario para enviar datos parecidos a los del historial.
             await message.populate('user', 'name');
 
             // Se emite el mensaje ya guardado a todos los sockets conectados a esa sala.

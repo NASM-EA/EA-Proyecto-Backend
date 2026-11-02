@@ -4,7 +4,7 @@ import type { UserRole } from '../models/User';
 // Middleware que solo deja pasar a los usuarios con un rol concreto.
 // Va siempre despues de VerifyToken, que es quien rellena req.user. Por ejemplo:
 //
-//     router.use('/authors', VerifyToken, RequireRole('admin'), authorRoutes);
+//     router.use('/exercises', VerifyToken, RequireRole('ADMIN'), exerciseRoutes);
 //
 // 401 (Unauthorized) quiere decir "no sé quién eres": no hay sesion.
 // 403 (Forbidden) quiere decir "sé quién eres, pero no puedes hacer esto": falta el rol.
