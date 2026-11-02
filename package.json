@@ -12,6 +12,7 @@
         "build": "tsc",
         "start": "node build/server.js",
         "seed": "tsx src/seed.ts",
+        "migrate-roles": "tsx src/migrate-roles.ts",
         "lint": "oxlint src",
         "lint:fix": "oxlint src --fix"
     },
