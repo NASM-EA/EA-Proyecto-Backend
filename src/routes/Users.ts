@@ -154,4 +154,54 @@ router.get('/:userId', RequireRole('ADMIN'), ValidateId('userId'), controller.re
 // Primero comprobamos que el ID sea correcto y despues validamos los datos recibidos
 router.put('/:userId', RequireRole('ADMIN'), ValidateId('userId'), ValidateJoi(Schemas.user.update), controller.updateUser);
 
+/**
+ * @openapi
+ * /users/{userId}:
+ *   delete:
+ *     tags: [Users]
+ *     summary: Borrado lógico de un usuario
+ *     description: >
+ *       Marca al usuario como borrado (isDeleted). Sigue en la base de datos, pero deja de salir
+ *       en los listados y su email queda libre. Solo ADMIN. Un admin no puede borrarse a sí mismo.
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       204: { description: Usuario borrado lógicamente }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
+
+// Borrado logico: solo ADMIN
+router.delete('/:userId', RequireRole('ADMIN'), ValidateId('userId'), controller.softDeleteUser);
+
+/**
+ * @openapi
+ * /users/{userId}/hard:
+ *   delete:
+ *     tags: [Users]
+ *     summary: Borrado definitivo de un usuario
+ *     description: >
+ *       Elimina al usuario de la base de datos para siempre. No se puede deshacer.
+ *       Solo ADMIN. Un admin no puede borrarse a sí mismo.
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       204: { description: Usuario eliminado de la base de datos }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
+
+// Borrado definitivo: solo ADMIN
+router.delete('/:userId/hard', RequireRole('ADMIN'), ValidateId('userId'), controller.hardDeleteUser);
+
 export = router;

@@ -59,12 +59,18 @@ Todo salvo `/auth/*`, `/ping` y `/api-docs` pide el token en la cabecera `Author
 | POST | `/users` | `ADMIN` | Crea un usuario: 201 `{ user }` |
 | GET | `/users/:userId` | `ADMIN` | Devuelve `{ user }` o 404 |
 | PUT | `/users/:userId` | `ADMIN` | Actualiza el usuario: 200 `{ user }` o 404 |
+| DELETE | `/users/:userId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404 |
+| DELETE | `/users/:userId/hard` | `ADMIN` | Borrado definitivo de la base de datos: 204 o 404 |
 | POST | `/exercises` | `ADMIN` | Crea un ejercicio: 201 `{ exercise }` |
 | GET | `/exercises/:exerciseId` | `ADMIN` | Devuelve `{ exercise }` o 404 |
 | PUT | `/exercises/:exerciseId` | `ADMIN` | Actualiza el ejercicio: 200 `{ exercise }` o 404 |
+| DELETE | `/exercises/:exerciseId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404 |
+| DELETE | `/exercises/:exerciseId/hard` | `ADMIN` | Borrado definitivo; lo quita también de las rutinas: 204 o 404 |
 | POST | `/workouts` | `ADMIN` | Crea una rutina: 201 `{ workout }` |
 | GET | `/workouts/:workoutId` | `ADMIN` | Devuelve `{ workout }` con sus ejercicios completos |
 | PUT | `/workouts/:workoutId` | `ADMIN` | Actualiza la rutina: 200 `{ workout }` o 404 |
+| DELETE | `/workouts/:workoutId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404 |
+| DELETE | `/workouts/:workoutId/hard` | `ADMIN` | Borrado definitivo de la base de datos: 204 o 404 |
 | GET | `/ping` | cualquiera | Healthcheck: `{ hello: 'world' }` |
 
 No hay listados ni `DELETE`: cada servicio solo crea, lee por id y actualiza. Los cuerpos que se envían:
