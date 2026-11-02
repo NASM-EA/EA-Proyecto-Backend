@@ -9,68 +9,66 @@ import { config } from './config';
 
 // Los esquemas del body salen de los mismos esquemas de Joi que validan las
 // peticiones, así que no se pueden quedar desfasados.
-const { swagger: authorInput } = j2s(Schemas.author.create);
-const { swagger: bookInput } = j2s(Schemas.book.create);
 const { swagger: registerInput } = j2s(Schemas.auth.register);
 const { swagger: loginInput } = j2s(Schemas.auth.login);
 const { swagger: refreshInput } = j2s(Schemas.auth.refresh);
+const { swagger: userInput } = j2s(Schemas.user.create);
+const { swagger: exerciseInput } = j2s(Schemas.exercise.create);
+const { swagger: workoutInput } = j2s(Schemas.workout.create);
 
-// Lo que devuelve la API no es igual a lo que se envía: lleva el _id y las fechas que
-// pone MongoDB, el usuario nunca devuelve la contraseña, y el libro trae sus autores enteros.
+// Lo que devuelve la API no es igual a lo que se envía: lleva el _id, las fechas que
+// pone MongoDB y las marcas del borrado lógico, que no se envían nunca en el body.
 const storedFields = {
     _id: { type: 'string', example: '6ab3f2fe9c500204a7d5f80b' },
     createdAt: { type: 'string', format: 'date-time' },
-    updatedAt: { type: 'string', format: 'date-time' }
+    updatedAt: { type: 'string', format: 'date-time' },
+    isDeleted: { type: 'boolean', example: false },
+    deletedAt: { type: 'string', format: 'date-time', nullable: true, example: null }
 };
 
-const authorSchema = { type: 'object', properties: { ...storedFields, ...authorInput.properties } };
+// El usuario se devuelve sin la contraseña. El rol sale del esquema de Joi, que a su vez
+// sale del modelo, así que se documenta con los mismos valores: ADMIN y USER.
+const { password: _password, ...userFields } = userInput.properties;
 
-const { password: _password, ...userFields } = registerInput.properties;
+const userSchema = { type: 'object', properties: { ...storedFields, ...userFields } };
 
-const userSchema = {
+const exerciseSchema = { type: 'object', properties: { ...storedFields, ...exerciseInput.properties } };
+
+// Una rutina guardada lleva los ejercicios como ids, porque así se envían y así se guardan.
+const workoutSchema = { type: 'object', properties: { ...storedFields, ...workoutInput.properties } };
+
+// Al leer una rutina por su id, el servicio hace populate y devuelve los ejercicios enteros.
+const populatedWorkoutSchema = {
     type: 'object',
-    properties: { ...storedFields, ...userFields, role: { type: 'string', enum: ['user', 'admin'] } }
+    properties: { ...storedFields, ...workoutInput.properties, exercises: { type: 'array', items: exerciseSchema } }
 };
 
-const bookSchema = {
-    type: 'object',
-    properties: {
-        ...storedFields,
-        ...bookInput.properties,
-        authors: { type: 'array', items: authorSchema }
-    }
-};
-
-// Ejemplos que se ven en la página de Swagger, sacados de los datos de npm run seed
-const authorExample = {
-    _id: '6ab3f2fe9c500204a7d5f801',
-    name: 'Ursula K. Le Guin',
-    email: 'leguin@example.com',
-    birthDate: '1929-10-21T00:00:00.000Z',
-    nationality: 'Estados Unidos',
-    biography: 'Escritora de ciencia ficción y fantasía conocida por Terramar.',
-    website: 'https://example.com/leguin',
-    photoUrl: 'https://example.com/fotos/leguin.jpg',
-    active: true,
+// Ejemplos que se ven en la página de Swagger, con datos del dominio del gimnasio
+const exerciseExample = {
+    _id: '6ab3f2fe9c500204a7d5f8b1',
+    name: 'Press de banca',
+    category: 'CHEST',
+    sets: 4,
+    reps: 10,
     createdAt: '2026-09-23T10:00:00.000Z',
-    updatedAt: '2026-09-23T10:00:00.000Z'
+    updatedAt: '2026-09-23T10:00:00.000Z',
+    isDeleted: false,
+    deletedAt: null
 };
 
-const bookExample = {
-    _id: '6ab3f2fe9c500204a7d5f80b',
-    title: 'A Wizard of Earthsea',
-    authors: [authorExample],
-    isbn: '9788400000008',
-    edition: 1,
-    publisher: 'Editorial Ejemplo',
-    publishedYear: 1968,
-    pages: 183,
-    language: 'en',
-    tags: ['fantasia'],
-    price: 16,
+const workoutExample = {
+    _id: '6ab3f2fe9c500204a7d5f8c1',
+    name: 'Día de pecho',
+    description: 'Press de banca y aperturas para terminar.',
+    dayOfWeek: 'MONDAY',
+    exercises: [exerciseExample._id],
     createdAt: '2026-09-23T10:00:00.000Z',
-    updatedAt: '2026-09-23T10:00:00.000Z'
+    updatedAt: '2026-09-23T10:00:00.000Z',
+    isDeleted: false,
+    deletedAt: null
 };
+
+const populatedWorkoutExample = { ...workoutExample, exercises: [exerciseExample] };
 
 // Una respuesta correcta: el esquema de lo que se devuelve y un ejemplo con datos de verdad
 const okResponse = (description: string, schema: object, example: object) => ({
@@ -96,9 +94,11 @@ const userExample = {
     _id: '6ab3f2fe9c500204a7d5f8a1',
     name: 'Admin',
     email: 'admin@example.com',
-    role: 'admin',
+    role: 'ADMIN',
     createdAt: '2026-10-05T10:00:00.000Z',
-    updatedAt: '2026-10-05T10:00:00.000Z'
+    updatedAt: '2026-10-05T10:00:00.000Z',
+    isDeleted: false,
+    deletedAt: null
 };
 
 const swaggerPath = (filePath: string) => filePath.replace(/\\/g, '/');
@@ -107,16 +107,17 @@ const swaggerDocument = swaggerJsdoc({
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'Library API',
+            title: 'Gym API',
             version: '1.0.0',
-            description: 'API de autores y libros del Seminari 7 (Node.js, Express, TypeScript y MongoDB).'
+            description: 'API de ejercicios, rutinas y usuarios del Seminari 7 (Node.js, Express, TypeScript y MongoDB).'
         },
         servers: [{ url: `http://localhost:${config.server.port}` }],
         tags: [
             { name: 'Health', description: 'Comprobar que la API responde' },
             { name: 'Auth', description: 'Registro, login y renovación del token' },
-            { name: 'Authors', description: 'Autores' },
-            { name: 'Books', description: 'Libros' }
+            { name: 'Exercises', description: 'Ejercicios del gimnasio' },
+            { name: 'Workouts', description: 'Rutinas, con los ejercicios que las forman' },
+            { name: 'Users', description: 'Usuarios del backoffice' }
         ],
         // Por defecto todas las rutas piden el token (el candado de Swagger).
         // Las rutas públicas lo quitan con security: [] en su comentario @openapi.
@@ -131,11 +132,12 @@ const swaggerDocument = swaggerJsdoc({
                 RegisterInput: registerInput,
                 LoginInput: loginInput,
                 RefreshInput: refreshInput,
+                UserInput: userInput,
                 User: userSchema,
-                AuthorInput: authorInput,
-                BookInput: bookInput,
-                Author: authorSchema,
-                Book: bookSchema
+                ExerciseInput: exerciseInput,
+                Exercise: exerciseSchema,
+                WorkoutInput: workoutInput,
+                Workout: workoutSchema
             },
             responses: {
                 LoginOk: okResponse(
@@ -152,40 +154,19 @@ const swaggerDocument = swaggerJsdoc({
                 ),
                 BadCredentials: errorResponse('El email o la contraseña no son correctos', 'Email o contraseña incorrectos'),
                 Unauthorized: errorResponse('Falta el token, ha caducado o no es válido', 'El token ha caducado'),
-                Forbidden: errorResponse('El usuario no tiene el rol necesario', 'Necesitas el rol admin'),
-                AuthorOne: okResponse('Un autor', { type: 'object', properties: { author: authorSchema } }, { author: authorExample }),
-                AuthorList: okResponse(
-                    'Una página de autores y los datos de paginación',
-                    {
-                        type: 'object',
-                        properties: {
-                            authors: { type: 'array', items: authorSchema },
-                            total: { type: 'integer', example: 12 },
-                            page: { type: 'integer', example: 1 },
-                            pages: { type: 'integer', example: 3 }
-                        }
-                    },
-                    { authors: [authorExample], total: 12, page: 1, pages: 3 }
+                Forbidden: errorResponse('El usuario no tiene el rol necesario', 'Necesitas el rol ADMIN'),
+                UserOne: okResponse('Un usuario, con la contraseña ya quitada', { type: 'object', properties: { user: userSchema } }, { user: userExample }),
+                ExerciseOne: okResponse('Un ejercicio', { type: 'object', properties: { exercise: exerciseSchema } }, { exercise: exerciseExample }),
+                WorkoutOne: okResponse(
+                    'Una rutina con sus ejercicios completos',
+                    { type: 'object', properties: { workout: populatedWorkoutSchema } },
+                    { workout: populatedWorkoutExample }
                 ),
-                BookOne: okResponse('Un libro, con los datos de sus autores', { type: 'object', properties: { book: bookSchema } }, { book: bookExample }),
-                BookList: okResponse(
-                    'Una página de libros y los datos de paginación',
-                    {
-                        type: 'object',
-                        properties: {
-                            books: { type: 'array', items: bookSchema },
-                            total: { type: 'integer', example: 12 },
-                            page: { type: 'integer', example: 1 },
-                            pages: { type: 'integer', example: 3 }
-                        }
-                    },
-                    { books: [bookExample], total: 12, page: 1, pages: 3 }
-                ),
-                BadRequest: errorResponse('El id de la URL no tiene forma de id de MongoDB', 'authorId no es un id válido'),
+                BadRequest: errorResponse('El id de la URL no tiene forma de id de MongoDB', 'exerciseId no es un id válido'),
                 InvalidPagination: errorResponse('Los parámetros de paginación o búsqueda no son válidos', '"page" must be greater than or equal to 1'),
                 NotFound: errorResponse('No existe ningún recurso con ese id', 'not found'),
-                Conflict: errorResponse('Ya existe otro recurso con ese email o ese ISBN', 'email ya existe'),
-                Unprocessable: errorResponse('El body no cumple el esquema', '"email" is required'),
+                Conflict: errorResponse('Ya existe otro recurso con ese email o ese nombre', 'name ya existe'),
+                Unprocessable: errorResponse('El body no cumple el esquema', '"name" is required'),
                 ServerError: errorResponse('Error inesperado del servidor', 'Internal server error')
             }
         }

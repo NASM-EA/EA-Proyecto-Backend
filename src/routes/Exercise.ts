@@ -19,11 +19,7 @@ const router = express.Router();
  *         application/json:
  *           schema: { $ref: '#/components/schemas/ExerciseInput' }
  *     responses:
- *       201:
- *         description: Ejercicio creado
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/Exercise' }
+ *       201: { $ref: '#/components/responses/ExerciseOne' }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  *       409: { $ref: '#/components/responses/Conflict' }

@@ -87,7 +87,11 @@ router.get('/:workoutId', ValidateId('workoutId'), controller.readWorkout);
  *         application/json:
  *           schema: { $ref: '#/components/schemas/WorkoutInput' }
  *     responses:
- *       200: { $ref: '#/components/responses/WorkoutOne' }
+ *       200:
+ *         description: Rutina actualizada. Al actualizar, los ejercicios se devuelven como ids, no como objetos.
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Workout' }
  *       400: { $ref: '#/components/responses/BadRequest' }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }

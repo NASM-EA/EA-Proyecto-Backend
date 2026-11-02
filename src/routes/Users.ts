@@ -50,11 +50,7 @@ router.get('/', controller.listUsers);
  *         application/json:
  *           schema: { $ref: '#/components/schemas/UserInput' }
  *     responses:
- *       201:
- *         description: Usuario creado, sin la contraseña
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/User' }
+ *       201: { $ref: '#/components/responses/UserOne' }
  *       401: { $ref: '#/components/responses/Unauthorized' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  *       409: { $ref: '#/components/responses/Conflict' }
