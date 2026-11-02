@@ -4,12 +4,12 @@ import Logging from '../library/Logging';
 import { hashPassword } from '../utils/password';
 
 // Roles que puede tener un usuario.
-// ADMIN gestiona el backoffice (autores y libros); USER solo puede usar el chat.
+// ADMIN gestiona el backoffice (ejercicios, rutinas y usuarios); USER solo puede usar el chat.
 export const USER_ROLES = ['ADMIN', 'USER'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 // Definimos los datos que puede tener un usuario.
-// Un usuario es quien inicia sesion en la aplicacion; no tiene nada que ver con los autores de los libros.
+// Un usuario es quien inicia sesion en la aplicacion; no es un dato del gimnasio como un ejercicio o una rutina.
 export interface IUser {
     name: string;
 

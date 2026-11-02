@@ -163,7 +163,6 @@ const swaggerDocument = swaggerJsdoc({
                     { workout: populatedWorkoutExample }
                 ),
                 BadRequest: errorResponse('El id de la URL no tiene forma de id de MongoDB', 'exerciseId no es un id válido'),
-                InvalidPagination: errorResponse('Los parámetros de paginación o búsqueda no son válidos', '"page" must be greater than or equal to 1'),
                 NotFound: errorResponse('No existe ningún recurso con ese id', 'not found'),
                 Conflict: errorResponse('Ya existe otro recurso con ese email o ese nombre', 'name ya existe'),
                 Unprocessable: errorResponse('El body no cumple el esquema', '"name" is required'),

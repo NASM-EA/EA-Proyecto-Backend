@@ -150,14 +150,14 @@ io.on('connection', (socket) => {
         }
 
         try {
-            // El autor sale del JWT verificado, nunca de los datos enviados por el cliente.
+            // El usuario que escribe sale del JWT verificado, nunca de los datos enviados por el cliente.
             const message = await Message.create({
                 room,
                 user: userId,
                 text
             });
 
-            // Cargamos el nombre del autor para enviar datos parecidos a los del historial.
+            // Cargamos el nombre del usuario para enviar datos parecidos a los del historial.
             await message.populate('user', 'name');
 
             // Se emite el mensaje ya guardado a todos los sockets conectados a esa sala.

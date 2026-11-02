@@ -17,6 +17,7 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-*.canvas
-*.py
-.obsidian
+kanvas.json
+.agents
+.cla*
+AGEN*
