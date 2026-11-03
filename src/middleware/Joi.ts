@@ -76,8 +76,15 @@ export const ValidateId = (paramName: string) => {
     };
 };
 
+// Cuerpo del borrado multiple: lista de ids de MongoDB, sin repetidos (maximo 100 de una vez)
+const bulkIds = Joi.object({
+    ids: Joi.array().items(Joi.string().pattern(OBJECT_ID)).min(1).max(100).unique().required()
+});
+
 // Aqui tenemos todos los esquemas de validacion que utilizamos en la aplicacion
 export const Schemas = {
+    // Borrado multiple (lo usan las tres entidades)
+    bulkDelete: bulkIds,
         // Validaciones de los parametros de la URL de los listados
     query: {
         exercise: Joi.object({

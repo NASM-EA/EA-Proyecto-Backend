@@ -42,6 +42,24 @@ export const softDeleteUser = (userId: string): Promise<HydratedDocument<IUserMo
 
 };
 
+// Borrado logico de varios usuarios a la vez. Devuelve cuantos se han borrado.
+export const softDeleteManyUsers = async (ids: string[]): Promise<number> => {
+
+    const result = await User.updateMany({ _id: { $in: ids }, isDeleted: false }, { isDeleted: true, deletedAt: new Date() });
+
+    return result.modifiedCount;
+
+};
+
+// Borrado definitivo de varios usuarios a la vez.
+export const hardDeleteManyUsers = async (ids: string[]): Promise<number> => {
+
+    const result = await User.deleteMany({ _id: { $in: ids } });
+
+    return result.deletedCount;
+
+};
+
 // Borrado definitivo: el usuario desaparece de la base de datos para siempre.
 // Funciona tambien con usuarios ya borrados logicamente. Devuelve null si no existe.
 export const hardDeleteUser = (userId: string): Promise<HydratedDocument<IUserModel> | null> => {
@@ -119,6 +137,10 @@ export default {
     softDeleteUser,
 
     hardDeleteUser,
+
+    softDeleteManyUsers,
+
+    hardDeleteManyUsers,
 
     listUsers
 

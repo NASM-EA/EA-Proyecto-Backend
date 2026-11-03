@@ -84,6 +84,26 @@ const listWorkouts = async (req: Request, res: Response, next: NextFunction) => 
     }
 };
 
+// Borrado logico de varios rutinas a la vez: recibe { ids: [...] } y devuelve cuantos se han borrado
+const softDeleteManyWorkouts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const deleted = await WorkoutService.softDeleteManyWorkouts(req.body.ids);
+        res.status(200).json({ deleted });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Borrado definitivo de varios rutinas a la vez: recibe { ids: [...] } y devuelve cuantos se han eliminado
+const hardDeleteManyWorkouts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const deleted = await WorkoutService.hardDeleteManyWorkouts(req.body.ids);
+        res.status(200).json({ deleted });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Exportamos todas las funciones para poder utilizarlas desde las rutas
 // Función para el borrado lógico: marca la rutina como borrada (isDeleted) sin quitarla de la base de datos
 const softDeleteWorkout = async (req: Request<{ workoutId: string }>, res: Response, next: NextFunction) => {
@@ -116,5 +136,5 @@ const hardDeleteWorkout = async (req: Request<{ workoutId: string }>, res: Respo
     }
 };
 
-export default { createWorkout, readWorkout, updateWorkout, softDeleteWorkout, hardDeleteWorkout, listWorkouts };
+export default { createWorkout, readWorkout, updateWorkout, softDeleteWorkout, hardDeleteWorkout, softDeleteManyWorkouts, hardDeleteManyWorkouts, listWorkouts };
 
