@@ -27,6 +27,14 @@ const router = express.Router();
  *         name: search
  *         description: Texto que debe contener el nombre (sin distinguir mayúsculas)
  *         schema: { type: string }
+ *       - in: query
+ *         name: sort
+ *         description: Columna por la que se ordena (por defecto name)
+ *         schema: { type: string, enum: [name] }
+ *       - in: query
+ *         name: order
+ *         description: Sentido del orden (por defecto asc)
+ *         schema: { type: string, enum: [asc, desc], default: asc }
  *     responses:
  *       200:
  *         description: Una página de usuarios con su id y su nombre

@@ -35,6 +35,14 @@ const listQuery = {
     search: Joi.string().trim().max(100).allow('')
 };
 
+// Parametros para ordenar: la columna (solo las permitidas) y el sentido (asc o desc)
+const sortQuery = (fields: string[]) => ({
+    // La columna tiene que ser una de la lista
+    sort: Joi.string().valid(...fields),
+    // Si no se pone, ordena de menor a mayor
+    order: Joi.string().valid('asc', 'desc').default('asc')
+});
+
 // Valida los parametros de la URL (?page=2&search=ana).
 // En Express 5 req.query es de solo lectura, asi que dejamos el resultado ya
 // validado y convertido en res.locals.query para que lo lea el controlador.
@@ -74,14 +82,20 @@ export const Schemas = {
     query: {
         exercise: Joi.object({
             ...listQuery,
-            category: Joi.string().valid(...EXERCISE_CATEGORIES)
+            category: Joi.string().valid(...EXERCISE_CATEGORIES),
+            // Columnas por las que se pueden ordenar los ejercicios
+            ...sortQuery(['name', 'category', 'sets', 'reps'])
         }),
         workout: Joi.object({
             ...listQuery,
-            dayOfWeek: Joi.string().valid(...DAYS_OF_WEEK)
+            dayOfWeek: Joi.string().valid(...DAYS_OF_WEEK),
+            // Columnas por las que se pueden ordenar las rutinas
+            ...sortQuery(['name', 'description', 'dayOfWeek'])
         }),
         user: Joi.object({
-            ...listQuery
+            ...listQuery,
+            // Los usuarios solo se pueden ordenar por nombre
+            ...sortQuery(['name'])
         })
     },
     // Validaciones de las rutas de autenticacion

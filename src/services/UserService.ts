@@ -1,7 +1,7 @@
 import { HydratedDocument } from 'mongoose';
 
 import User, { IUser, IUserModel } from '../models/User';
-import { buildPageInfo, escapeRegex, getSkip } from '../utils/pagination';
+import { buildPageInfo, buildSort, escapeRegex, getSkip } from '../utils/pagination';
 
 // Datos que hacen falta para crear un usuario.
 // El nombre, el email y la contraseña son obligatorios; el rol es opcional
@@ -60,12 +60,13 @@ export const updateUser = (userId: string, data: UpdateUserInput): Promise<Hydra
 };
 
 // Parametros de un listado: los que llegan ya validados por ValidateQuery
-export type ListUsersInput = { page: number; limit: number; search?: string };
+// (sort es la columna por la que ordenar y order el sentido: asc o desc)
+export type ListUsersInput = { page: number; limit: number; search?: string; sort?: string; order?: 'asc' | 'desc' };
 
 // Devuelve una pagina de usuarios para el chat: solo _id y name.
 // El buscador mira SOLO el nombre: este listado lo puede llamar cualquier usuario con sesion
 // y no debe permitir descubrir emails de otros (por eso tampoco hay filtro por rol).
-export const listUsers = async ({ page, limit, search }: ListUsersInput) => {
+export const listUsers = async ({ page, limit, search, sort, order }: ListUsersInput) => {
 
     // Solo los usuarios no borrados logicamente
     const filter: Record<string, unknown> = { isDeleted: false };
@@ -77,7 +78,8 @@ export const listUsers = async ({ page, limit, search }: ListUsersInput) => {
 
     // El nombre no es unico, asi que desempatamos con _id para que el orden sea estable entre paginas
     const [users, total] = await Promise.all([
-        User.find(filter).select('_id name').sort({ name: 1, _id: 1 }).skip(getSkip(page, limit)).limit(limit).lean(),
+        // Ordenamos por la columna pedida (por defecto el nombre)
+        User.find(filter).select('_id name').sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).lean(),
         User.countDocuments(filter)
     ]);
 

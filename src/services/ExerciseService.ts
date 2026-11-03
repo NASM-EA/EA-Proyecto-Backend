@@ -1,6 +1,6 @@
 import { HydratedDocument } from 'mongoose';
 import Exercise, { ExerciseCategory, IExercise } from '../models/Exercise';
-import { buildPageInfo, escapeRegex, getSkip } from '../utils/pagination';
+import { buildPageInfo, buildSort, escapeRegex, getSkip } from '../utils/pagination';
 
 // Datos necesarios para crear un ejercicio.
 export type NewExercise = Pick<IExercise, 'name' | 'category'> & { sets?: number; reps?: number };
@@ -43,10 +43,11 @@ export const updateExercise = (exerciseId: string, data: UpdateExerciseInput): P
 };
 
 // Parametros de un listado: los que llegan ya validados por ValidateQuery
-export type ListExercisesInput = { page: number; limit: number; search?: string; category?: ExerciseCategory };
+// (sort es la columna por la que ordenar y order el sentido: asc o desc)
+export type ListExercisesInput = { page: number; limit: number; search?: string; category?: ExerciseCategory; sort?: string; order?: 'asc' | 'desc' };
 
 // Devuelve una pagina de ejercicios, filtrada por categoria y/o por texto en el nombre
-export const listExercises = async ({ page, limit, search, category }: ListExercisesInput) => {
+export const listExercises = async ({ page, limit, search, category, sort, order }: ListExercisesInput) => {
 
     // Solo los ejercicios no borrados logicamente
     const filter: Record<string, unknown> = { isDeleted: false };
@@ -63,7 +64,8 @@ export const listExercises = async ({ page, limit, search, category }: ListExerc
 
     // Pedimos la pagina y el total a la vez, usando el MISMO filtro en las dos consultas
     const [exercises, total] = await Promise.all([
-        Exercise.find(filter).sort({ name: 1 }).skip(getSkip(page, limit)).limit(limit),
+        // Ordenamos por la columna pedida (por defecto el nombre)
+        Exercise.find(filter).sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit),
         Exercise.countDocuments(filter)
     ]);
 

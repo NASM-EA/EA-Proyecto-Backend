@@ -1,6 +1,6 @@
 import mongoose, { HydratedDocument } from 'mongoose';
 import Workout, { DayOfWeek, IWorkout } from '../models/Workout';
-import { buildPageInfo, escapeRegex, getSkip } from '../utils/pagination';
+import { buildPageInfo, buildSort, escapeRegex, getSkip } from '../utils/pagination';
 
 // Datos necesarios para crear una rutina.
 // El nombre y el dia de la semana son obligatorios; la descripcion y los ejercicios
@@ -62,10 +62,11 @@ export const updateWorkout = (workoutId: string, data: UpdateWorkoutInput): Prom
 };
 
 // Parametros de un listado: los que llegan ya validados por ValidateQuery
-export type ListWorkoutsInput = { page: number; limit: number; search?: string; dayOfWeek?: DayOfWeek };
+// (sort es la columna por la que ordenar y order el sentido: asc o desc)
+export type ListWorkoutsInput = { page: number; limit: number; search?: string; dayOfWeek?: DayOfWeek; sort?: string; order?: 'asc' | 'desc' };
 
 // Devuelve una pagina de rutinas, filtrada por dia y/o por texto en nombre o descripcion
-export const listWorkouts = async ({ page, limit, search, dayOfWeek }: ListWorkoutsInput) => {
+export const listWorkouts = async ({ page, limit, search, dayOfWeek, sort, order }: ListWorkoutsInput) => {
 
     // Solo las rutinas no borradas logicamente
     const filter: Record<string, unknown> = { isDeleted: false };
@@ -83,7 +84,8 @@ export const listWorkouts = async ({ page, limit, search, dayOfWeek }: ListWorko
 
     // Pedimos la pagina y el total a la vez, con el MISMO filtro
     const [workouts, total] = await Promise.all([
-        Workout.find(filter).sort({ name: 1 }).skip(getSkip(page, limit)).limit(limit).populate('exercises'),
+        // Ordenamos por la columna pedida (por defecto el nombre)
+        Workout.find(filter).sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).populate('exercises'),
         Workout.countDocuments(filter)
     ]);
 

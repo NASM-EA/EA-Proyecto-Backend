@@ -47,6 +47,14 @@ const router = express.Router();
  *       - in: query
  *         name: category
  *         schema: { type: string, enum: [CHEST, BACK, LEGS, SHOULDERS, ARMS, CORE, CARDIO] }
+ *       - in: query
+ *         name: sort
+ *         description: Columna por la que se ordena (por defecto name)
+ *         schema: { type: string, enum: [name, category, sets, reps] }
+ *       - in: query
+ *         name: order
+ *         description: Sentido del orden (por defecto asc)
+ *         schema: { type: string, enum: [asc, desc], default: asc }
  *     responses:
  *       200:
  *         description: Una página de ejercicios
