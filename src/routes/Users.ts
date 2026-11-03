@@ -15,7 +15,8 @@ const router = express.Router();
  *     summary: Lista los usuarios disponibles para el chat
  *     description: >
  *       Devuelve solo el id y el nombre de cada usuario, con paginación y buscador por nombre.
- *       Cualquier usuario con token puede consultarla.
+ *       Cualquier usuario con token puede consultarla. Un ADMIN ve también los usuarios borrados;
+ *       el resto solo ve los activos.
  *     parameters:
  *       - in: query
  *         name: page

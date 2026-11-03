@@ -9,10 +9,12 @@ import { Schemas, ValidateJoi } from '../middleware/Joi';
 const router = express.Router();
 router.post('/register', ValidateJoi(Schemas.auth.register), controller.register);
 router.post('/login', ValidateJoi(Schemas.auth.login), controller.login);
+// El login del backoffice: el mismo cuerpo que /auth/login, pero solo entra un ADMIN
+router.post('/admin/login', ValidateJoi(Schemas.auth.login), controller.adminLogin);
 router.post('/refresh', ValidateJoi(Schemas.auth.refresh), controller.refresh);
 export = router;
 
-// Documentacion de Swagger de las tres rutas.
+// Documentacion de Swagger de las cuatro rutas.
 // security: [] quita el candado: son las unicas rutas que no necesitan token.
 
 /**
@@ -41,7 +43,9 @@ export = router;
  *   post:
  *     tags: [Auth]
  *     summary: Inicia sesion
- *     description: Devuelve el access token (para la cabecera Authorization), el refresh token y el usuario.
+ *     description: >
+ *       Devuelve el access token (para la cabecera Authorization), el refresh token y el usuario.
+ *       Un usuario borrado no puede entrar: sus credenciales responden 401 igual que unas incorrectas.
  *     security: []
  *     requestBody:
  *       required: true
@@ -53,11 +57,32 @@ export = router;
  *       401: { $ref: '#/components/responses/BadCredentials' }
  *       422: { $ref: '#/components/responses/Unprocessable' }
  *
+ * /auth/admin/login:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Inicia sesion en el backoffice (solo ADMIN)
+ *     description: >
+ *       Es el login del panel de administracion. Las credenciales se comprueban igual que en
+ *       /auth/login, pero despues se exige el rol ADMIN, asi que un usuario normal recibe un 403.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/LoginInput' }
+ *     responses:
+ *       200: { $ref: '#/components/responses/LoginOk' }
+ *       401: { $ref: '#/components/responses/BadCredentials' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/Unprocessable' }
+ *
  * /auth/refresh:
  *   post:
  *     tags: [Auth]
  *     summary: Pide un access token nuevo
- *     description: Se usa cuando el access token ha caducado. Se envia el refresh token que devolvio el login.
+ *     description: >
+ *       Se usa cuando el access token ha caducado. Se envia el refresh token que devolvio el login.
+ *       Si el usuario ya no existe, o esta borrado, el refresh token deja de servir y responde 401.
  *     security: []
  *     requestBody:
  *       required: true

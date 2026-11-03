@@ -7,7 +7,6 @@ import Logging from './library/Logging';
 import Logger from './middleware/Logger';
 import ErrorHandler from './middleware/ErrorHandler';
 import { VerifyToken } from './middleware/VerifyToken';
-import { RequireRole } from './middleware/RequireRole';
 import authRoutes from './routes/Auth';
 import exerciseRoutes from './routes/Exercise';
 import workoutRoutes from './routes/Workout';
@@ -43,11 +42,12 @@ const StartServer = () => {
     // Publicas: registro, login y refresh
     router.use('/auth', authRoutes);
 
-    // Protegidas: primero VerifyToken comprueba el token (401 si falta o no vale)
-    // y despues RequireRole comprueba el rol (403 si no es admin).
-    // Los ejercicios y las rutinas son datos del backoffice: solo los toca un admin.
-    router.use('/exercises', VerifyToken, RequireRole('ADMIN'), exerciseRoutes);
-    router.use('/workouts', VerifyToken, RequireRole('ADMIN'), workoutRoutes);
+    // Protegidas: VerifyToken comprueba el token (401 si falta o no vale) y deja el usuario
+    // en req.user. La lectura de ejercicios y rutinas esta abierta a cualquier sesion: los
+    // servicios ya devuelven solo los elementos activos a quien no es ADMIN (tarjeta SE-07).
+    // Las escrituras siguen siendo solo de ADMIN y eso se comprueba en cada router.
+    router.use('/exercises', VerifyToken, exerciseRoutes);
+    router.use('/workouts', VerifyToken, workoutRoutes);
     // La lista de usuarios es para el chat, así que cualquier usuario autenticado puede consultarla.
     // Las escrituras (POST y PUT) y el detalle por id son solo para ADMIN, y eso se comprueba
     // en src/routes/Users.ts, porque aquí el montaje es el mismo para todas las rutas del router.

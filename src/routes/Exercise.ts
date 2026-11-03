@@ -14,6 +14,7 @@ const router = express.Router();
  *   post:
  *     tags: [Exercises]
  *     summary: Crea un ejercicio
+ *     description: Solo un ADMIN puede crear ejercicios.
  *     requestBody:
  *       required: true
  *       content:
@@ -34,6 +35,9 @@ const router = express.Router();
  *   get:
  *     tags: [Exercises]
  *     summary: Lista los ejercicios con paginación y buscador
+ *     description: >
+ *       Cualquier sesión con token puede consultarlo. Un ADMIN ve todos los ejercicios, también los
+ *       que están borrados; el resto de usuarios solo ve los activos.
  *     parameters:
  *       - in: query
  *         name: page
@@ -77,17 +81,19 @@ const router = express.Router();
  *                     hasNextPage: { type: boolean }
  *                     hasPrevPage: { type: boolean }
  *       401: { $ref: '#/components/responses/Unauthorized' }
- *       403: { $ref: '#/components/responses/Forbidden' }
  *       422: { $ref: '#/components/responses/Unprocessable' }
  */
 
 // Ruta para listar ejercicios: primero validamos los parametros de la URL
+// La lectura la puede hacer cualquier sesion: el controlador pasa el rol al servicio
+// y el servicio decide si devuelve solo los activos o todos
 router.get('/', ValidateQuery(Schemas.query.exercise), controller.listExercises);
 
 // Ruta para crear un ejercicio nuevo
+// Solo ADMIN: escribir en el catalogo es cosa del backoffice
 // Primero comprobamos que los datos cumplen el esquema de Joi
 // Si son correctos llamamos a la funcion createExercise del controlador
-router.post('/', ValidateJoi(Schemas.exercise.create), controller.createExercise);
+router.post('/', RequireRole('ADMIN'), ValidateJoi(Schemas.exercise.create), controller.createExercise);
 
 /**
  * @openapi
@@ -95,6 +101,9 @@ router.post('/', ValidateJoi(Schemas.exercise.create), controller.createExercise
  *   get:
  *     tags: [Exercises]
  *     summary: Devuelve un ejercicio
+ *     description: >
+ *       Cualquier sesión con token puede consultarlo. Un ADMIN ve también los ejercicios borrados;
+ *       para el resto, un ejercicio borrado responde 404.
  *     parameters:
  *       - in: path
  *         name: exerciseId
@@ -105,7 +114,6 @@ router.post('/', ValidateJoi(Schemas.exercise.create), controller.createExercise
  *       200: { $ref: '#/components/responses/ExerciseOne' }
  *       400: { $ref: '#/components/responses/BadRequest' }
  *       401: { $ref: '#/components/responses/Unauthorized' }
- *       403: { $ref: '#/components/responses/Forbidden' }
  *       404: { $ref: '#/components/responses/NotFound' }
  */
 
@@ -119,7 +127,7 @@ router.get('/:exerciseId', ValidateId('exerciseId'), controller.readExercise);
  *   put:
  *     tags: [Exercises]
  *     summary: Reemplaza los datos de un ejercicio
- *     description: Hay que enviar el ejercicio entero, no solo los campos que cambian.
+ *     description: Hay que enviar el ejercicio entero, no solo los campos que cambian. Solo un ADMIN puede modificarlo.
  *     parameters:
  *       - in: path
  *         name: exerciseId
@@ -141,8 +149,9 @@ router.get('/:exerciseId', ValidateId('exerciseId'), controller.readExercise);
  */
 
 // Ruta para actualizar un ejercicio
+// Solo ADMIN, igual que la creacion: el catalogo lo mantiene el backoffice
 // Primero comprobamos que el ID sea correcto y despues validamos los datos recibidos
-router.put('/:exerciseId', ValidateId('exerciseId'), ValidateJoi(Schemas.exercise.update), controller.updateExercise);
+router.put('/:exerciseId', RequireRole('ADMIN'), ValidateId('exerciseId'), ValidateJoi(Schemas.exercise.update), controller.updateExercise);
 
 /**
  * @openapi

@@ -25,12 +25,14 @@ export const createExercise = (data: NewExercise): Promise<ExerciseDocument> => 
 
 };
 
-// Funcion que busca un ejercicio por su ID en la base de datos
-export const getExerciseById = (exerciseId: string): Promise<ExerciseDocument | null> => {
+// Funcion que busca un ejercicio por su ID en la base de datos.
+// El ADMIN consulta todos los ejercicios, tambien los que estan borrados logicamente.
+// Cualquier otra sesion solo ve los activos: si el ejercicio esta borrado se comporta
+// como si no existiera y el controlador responde 404.
+export const getExerciseById = (exerciseId: string, isAdmin: boolean): Promise<ExerciseDocument | null> => {
 
-    // Buscamos el ejercicio usando el ID que hemos recibido.
-    // Filtramos isDeleted: false para que un ejercicio borrado logicamente no se pueda leer
-    return Exercise.findOne({ _id: exerciseId, isDeleted: false });
+    // Con el rol ADMIN buscamos por ID a secas; el resto exige ademas isDeleted: false
+    return isAdmin ? Exercise.findById(exerciseId) : Exercise.findOne({ _id: exerciseId, isDeleted: false });
 
 };
 
@@ -72,11 +74,12 @@ export const updateExercise = (exerciseId: string, data: UpdateExerciseInput): P
 // (sort es la columna por la que ordenar y order el sentido: asc o desc)
 export type ListExercisesInput = { page: number; limit: number; search?: string; category?: ExerciseCategory; sort?: string; order?: 'asc' | 'desc' };
 
-// Devuelve una pagina de ejercicios, filtrada por categoria y/o por texto en el nombre
-export const listExercises = async ({ page, limit, search, category, sort, order }: ListExercisesInput) => {
+// Devuelve una pagina de ejercicios, filtrada por categoria y/o por texto en el nombre.
+// El ADMIN ve todos los ejercicios; cualquier otra sesion solo los activos (isDeleted: false).
+export const listExercises = async ({ page, limit, search, category, sort, order }: ListExercisesInput, isAdmin: boolean) => {
 
-    // Solo los ejercicios no borrados logicamente
-    const filter: Record<string, unknown> = { isDeleted: false };
+    // El ADMIN consulta todo, asi que su filtro empieza vacio; el resto empieza solo con los activos
+    const filter: Record<string, unknown> = isAdmin ? {} : { isDeleted: false };
 
     // Filtro exacto por categoria, si se ha pedido
     if (category) {
