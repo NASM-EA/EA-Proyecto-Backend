@@ -99,7 +99,7 @@ export const listUsers = async ({ page, limit, search, sort, order }: ListUsersI
     // El nombre no es unico, asi que desempatamos con _id para que el orden sea estable entre paginas
     const [users, total] = await Promise.all([
         // Ordenamos por la columna pedida (por defecto el nombre)
-        User.find(filter).select('_id name').sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).lean(),
+        User.find(filter).select(isAdmin ? '_id name isDeleted' : '_id name').sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).lean(),
         User.countDocuments(filter)
     ]);
 

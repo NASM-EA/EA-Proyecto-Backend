@@ -44,7 +44,7 @@ export const getWorkoutById = (workoutId: string, isAdmin: boolean): Promise<Wor
     // En los dos casos cargamos los ejercicios referenciados.
     return isAdmin
         ? Workout.findById(workoutId).populate('exercises')
-        : Workout.findOne({ _id: workoutId, isDeleted: false }).populate('exercises');
+        : Workout.findOne({ _id: workoutId, isDeleted: false }).populate({ path: 'exercises', match: { isDeleted: false } });
 
 };
 
@@ -108,7 +108,7 @@ export const listWorkouts = async ({ page, limit, search, dayOfWeek, sort, order
     // Pedimos la pagina y el total a la vez, con el MISMO filtro
     const [workouts, total] = await Promise.all([
         // Ordenamos por la columna pedida (por defecto el nombre)
-        Workout.find(filter).sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).populate({ path: 'exercises', match: { isDeleted: false } }),
+        Workout.find(filter).sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).populate({ path: 'exercises', match: isAdmin ? {} : { isDeleted: false } }),
         Workout.countDocuments(filter)
     ]);
 
