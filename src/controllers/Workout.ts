@@ -24,8 +24,11 @@ const readWorkout = async (req: Request<{ workoutId: string }>, res: Response, n
     const workoutId = req.params.workoutId;
 
     try {
+        // El servicio necesita saber el rol de la sesion: solo un ADMIN ve las rutinas borradas
+        const isAdmin = req.user?.role === 'ADMIN';
+
         // Buscamos la rutina usando el servicio
-        const workout = await WorkoutService.getWorkoutById(workoutId);
+        const workout = await WorkoutService.getWorkoutById(workoutId, isAdmin);
 
         // Comprobamos si hemos encontrado la rutina
         if (workout) {
@@ -65,10 +68,14 @@ const updateWorkout = async (req: Request<{ workoutId: string }>, res: Response,
 };
 
 // Función para listar rutinas con paginación y buscador
-const listWorkouts = async (_req: Request, res: Response, next: NextFunction) => {
+const listWorkouts = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // El servicio necesita saber el rol de la sesion: el ADMIN ve todas las rutinas
+        // y cualquier otra sesion solo las activas
+        const isAdmin = req.user?.role === 'ADMIN';
+
         // ValidateQuery ya ha comprobado y convertido los parametros de la URL
-        const result = await WorkoutService.listWorkouts(res.locals.query);
+        const result = await WorkoutService.listWorkouts(res.locals.query, isAdmin);
 
         // Devolvemos la pagina de rutinas junto con los datos de paginacion
         res.status(200).json(result);

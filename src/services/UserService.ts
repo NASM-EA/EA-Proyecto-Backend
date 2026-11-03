@@ -66,10 +66,12 @@ export type ListUsersInput = { page: number; limit: number; search?: string; sor
 // Devuelve una pagina de usuarios para el chat: solo _id y name.
 // El buscador mira SOLO el nombre: este listado lo puede llamar cualquier usuario con sesion
 // y no debe permitir descubrir emails de otros (por eso tampoco hay filtro por rol).
-export const listUsers = async ({ page, limit, search, sort, order }: ListUsersInput) => {
+// El ADMIN ve todos los usuarios, tambien los borrados logicamente; cualquier otra sesion
+// solo ve los activos, que es lo que necesita el chat.
+export const listUsers = async ({ page, limit, search, sort, order }: ListUsersInput, isAdmin: boolean) => {
 
-    // Solo los usuarios no borrados logicamente
-    const filter: Record<string, unknown> = { isDeleted: false };
+    // El ADMIN consulta todo, asi que su filtro empieza vacio; el resto empieza solo con los activos
+    const filter: Record<string, unknown> = isAdmin ? {} : { isDeleted: false };
 
     // Buscador: el nombre contiene el texto, sin distinguir mayusculas
     if (search) {
