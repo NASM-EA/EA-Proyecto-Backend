@@ -2,8 +2,8 @@ import Joi, { ObjectSchema } from 'joi';
 
 import { NextFunction, Request, Response } from 'express';
 
-import { EXERCISE_CATEGORIES, IExercise } from '../models/Exercise';
-import { DAYS_OF_WEEK, IWorkout } from '../models/Workout';
+import { EXERCISE_CATEGORIES,  IExercise } from '../models/Exercise';
+import { DAYS_OF_WEEK,  IWorkout } from '../models/Workout';
 import { IUser, USER_ROLES } from '../models/User';
 
 // Funcion que se encarga de validar los datos que llegan en una petición
@@ -27,6 +27,29 @@ export const ValidateJoi = (schema: ObjectSchema) => {
 // Esta expresion nos sirve para comprobar que tiene el formato correcto
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 
+// Parametros que comparten todos los listados: pagina, elementos por pagina y texto a buscar.
+// Joi convierte los textos de la URL ("2") a numero (2) y rellena los valores por defecto.
+const listQuery = {
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(10),
+    search: Joi.string().trim().max(100).allow('')
+};
+
+// Valida los parametros de la URL (?page=2&search=ana).
+// En Express 5 req.query es de solo lectura, asi que dejamos el resultado ya
+// validado y convertido en res.locals.query para que lo lea el controlador.
+export const ValidateQuery = (schema: ObjectSchema) => {
+    return async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            res.locals.query = await schema.validateAsync(req.query);
+            next();
+        } catch (error) {
+            // Joi lanza un error con details: el ErrorHandler lo convierte en un 422
+            next(error);
+        }
+    };
+};
+
 // Funcion que comprueba el id que llega en los parametros de la URL
 // Si no tiene el formato de un id de MongoDB devolvemos un error 400
 export const ValidateId = (paramName: string) => {
@@ -47,6 +70,20 @@ export const ValidateId = (paramName: string) => {
 
 // Aqui tenemos todos los esquemas de validacion que utilizamos en la aplicacion
 export const Schemas = {
+        // Validaciones de los parametros de la URL de los listados
+    query: {
+        exercise: Joi.object({
+            ...listQuery,
+            category: Joi.string().valid(...EXERCISE_CATEGORIES)
+        }),
+        workout: Joi.object({
+            ...listQuery,
+            dayOfWeek: Joi.string().valid(...DAYS_OF_WEEK)
+        }),
+        user: Joi.object({
+            ...listQuery
+        })
+    },
     // Validaciones de las rutas de autenticacion
     auth: {
         // Registro: nombre, email y contraseña.

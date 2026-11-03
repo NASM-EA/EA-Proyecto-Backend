@@ -1,7 +1,7 @@
 import express from 'express';
 import controller from '../controllers/Users';
 
-import { Schemas, ValidateId, ValidateJoi } from '../middleware/Joi';
+import { Schemas, ValidateId, ValidateJoi, ValidateQuery } from '../middleware/Joi';
 import { RequireRole } from '../middleware/RequireRole';
 
 // Agrupa las rutas relacionadas con los usuarios.
@@ -14,11 +14,22 @@ const router = express.Router();
  *     tags: [Users]
  *     summary: Lista los usuarios disponibles para el chat
  *     description: >
- *       Devuelve solo el id y el nombre de cada usuario, para poder iniciar un chat directo.
+ *       Devuelve solo el id y el nombre de cada usuario, con paginación y buscador por nombre.
  *       Cualquier usuario con token puede consultarla.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, minimum: 1, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+ *       - in: query
+ *         name: search
+ *         description: Texto que debe contener el nombre (sin distinguir mayúsculas)
+ *         schema: { type: string }
  *     responses:
  *       200:
- *         description: Lista de usuarios con su id y su nombre
+ *         description: Una página de usuarios con su id y su nombre
  *         content:
  *           application/json:
  *             schema:
@@ -31,12 +42,22 @@ const router = express.Router();
  *                     properties:
  *                       _id: { type: string, example: 6ab3f2fe9c500204a7d5f8a1 }
  *                       name: { type: string, example: Admin }
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page: { type: integer }
+ *                     limit: { type: integer }
+ *                     total: { type: integer }
+ *                     totalPages: { type: integer }
+ *                     hasNextPage: { type: boolean }
+ *                     hasPrevPage: { type: boolean }
  *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       422: { $ref: '#/components/responses/Unprocessable' }
  *       500: { $ref: '#/components/responses/ServerError' }
  */
 
 // Devuelve el listado de usuarios disponibles.
-router.get('/', controller.listUsers);
+router.get('/', ValidateQuery(Schemas.query.user), controller.listUsers);
 
 /**
  * @openapi

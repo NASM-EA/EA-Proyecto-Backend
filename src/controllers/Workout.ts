@@ -64,5 +64,19 @@ const updateWorkout = async (req: Request<{ workoutId: string }>, res: Response,
     }
 };
 
+// Función para listar rutinas con paginación y buscador
+const listWorkouts = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+        // ValidateQuery ya ha comprobado y convertido los parametros de la URL
+        const result = await WorkoutService.listWorkouts(res.locals.query);
+
+        // Devolvemos la pagina de rutinas junto con los datos de paginacion
+        res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Exportamos todas las funciones para poder utilizarlas desde las rutas
-export default { createWorkout, readWorkout, updateWorkout };
+export default { createWorkout, readWorkout, updateWorkout, listWorkouts };
+

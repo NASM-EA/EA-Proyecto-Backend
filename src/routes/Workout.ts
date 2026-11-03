@@ -2,7 +2,7 @@ import express from 'express';
 
 import controller from '../controllers/Workout';
 
-import { Schemas, ValidateId, ValidateJoi } from '../middleware/Joi';
+import { Schemas, ValidateId, ValidateJoi, ValidateQuery } from '../middleware/Joi';
 
 // Creamos el router que se encargara de las rutas relacionadas con las rutinas
 const router = express.Router();
@@ -33,6 +33,55 @@ const router = express.Router();
  *       422: { $ref: '#/components/responses/Unprocessable' }
  *       500: { $ref: '#/components/responses/ServerError' }
  */
+
+/**
+ * @openapi
+ * /workouts:
+ *   get:
+ *     tags: [Workouts]
+ *     summary: Lista las rutinas con paginación y buscador
+ *     description: Cada rutina lleva sus ejercicios completos. El buscador mira el nombre y la descripción.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, minimum: 1, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+ *       - in: query
+ *         name: search
+ *         description: Texto que debe contener el nombre o la descripción (sin distinguir mayúsculas)
+ *         schema: { type: string }
+ *       - in: query
+ *         name: dayOfWeek
+ *         schema: { type: string, enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY] }
+ *     responses:
+ *       200:
+ *         description: Una página de rutinas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 workouts:
+ *                   type: array
+ *                   items: { type: object }
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page: { type: integer }
+ *                     limit: { type: integer }
+ *                     total: { type: integer }
+ *                     totalPages: { type: integer }
+ *                     hasNextPage: { type: boolean }
+ *                     hasPrevPage: { type: boolean }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/Unprocessable' }
+ */
+
+// Ruta para listar rutinas: primero validamos los parametros de la URL
+router.get('/', ValidateQuery(Schemas.query.workout), controller.listWorkouts);
 
 // Ruta para crear una rutina nueva
 // Primero comprobamos que los datos cumplen el esquema de Joi

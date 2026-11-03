@@ -2,7 +2,7 @@ import express from 'express';
 
 import controller from '../controllers/Exercise';
 
-import { Schemas, ValidateId, ValidateJoi } from '../middleware/Joi';
+import { Schemas, ValidateId, ValidateJoi, ValidateQuery  } from '../middleware/Joi';
 
 // Creamos el router que se encargara de las rutas relacionadas con los ejercicios
 const router = express.Router();
@@ -26,6 +26,54 @@ const router = express.Router();
  *       422: { $ref: '#/components/responses/Unprocessable' }
  *       500: { $ref: '#/components/responses/ServerError' }
  */
+
+/**
+ * @openapi
+ * /exercises:
+ *   get:
+ *     tags: [Exercises]
+ *     summary: Lista los ejercicios con paginación y buscador
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, minimum: 1, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+ *       - in: query
+ *         name: search
+ *         description: Texto que debe contener el nombre (sin distinguir mayúsculas)
+ *         schema: { type: string }
+ *       - in: query
+ *         name: category
+ *         schema: { type: string, enum: [CHEST, BACK, LEGS, SHOULDERS, ARMS, CORE, CARDIO] }
+ *     responses:
+ *       200:
+ *         description: Una página de ejercicios
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 exercises:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/Exercise' }
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page: { type: integer }
+ *                     limit: { type: integer }
+ *                     total: { type: integer }
+ *                     totalPages: { type: integer }
+ *                     hasNextPage: { type: boolean }
+ *                     hasPrevPage: { type: boolean }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/Unprocessable' }
+ */
+
+// Ruta para listar ejercicios: primero validamos los parametros de la URL
+router.get('/', ValidateQuery(Schemas.query.exercise), controller.listExercises);
 
 // Ruta para crear un ejercicio nuevo
 // Primero comprobamos que los datos cumplen el esquema de Joi
