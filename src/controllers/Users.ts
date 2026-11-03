@@ -3,10 +3,14 @@ import UserService from '../services/UserService';
 
 // Devuelve los datos básicos de los usuarios (id y nombre) con paginación y buscador,
 // para que el frontend pueda mostrarlos y usarlos al iniciar un chat directo.
-const listUsers = async (_req: Request, res: Response, next: NextFunction) => {
+const listUsers = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // El servicio necesita saber el rol de la sesion: el ADMIN ve todos los usuarios
+        // (tambien los borrados) y cualquier otra sesion solo los activos
+        const isAdmin = req.user?.role === 'ADMIN';
+
         // ValidateQuery ya ha comprobado y convertido los parametros de la URL
-        const result = await UserService.listUsers(res.locals.query);
+        const result = await UserService.listUsers(res.locals.query, isAdmin);
 
         // Devolvemos { users, pagination }
         res.status(200).json(result);

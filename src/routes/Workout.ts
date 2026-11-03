@@ -3,6 +3,7 @@ import express from 'express';
 import controller from '../controllers/Workout';
 
 import { Schemas, ValidateId, ValidateJoi, ValidateQuery } from '../middleware/Joi';
+import { RequireRole } from '../middleware/RequireRole';
 
 // Creamos el router que se encargara de las rutas relacionadas con las rutinas
 const router = express.Router();
@@ -14,6 +15,7 @@ const router = express.Router();
  *     tags: [Workouts]
  *     summary: Crea una rutina
  *     description: >
+ *       Solo un ADMIN puede crear rutinas.
  *       Los ejercicios se envian como una lista de ids (textos) de ejercicios ya existentes.
  *       La respuesta devuelve la rutina guardada, con esos mismos ids en exercises.
  *     requestBody:
@@ -40,7 +42,10 @@ const router = express.Router();
  *   get:
  *     tags: [Workouts]
  *     summary: Lista las rutinas con paginación y buscador
- *     description: Cada rutina lleva sus ejercicios completos. El buscador mira el nombre y la descripción.
+ *     description: >
+ *       Cada rutina lleva sus ejercicios completos. El buscador mira el nombre y la descripción.
+ *       Cualquier sesión con token puede consultarlo: un ADMIN ve todas las rutinas, también las
+ *       borradas; el resto de usuarios solo ve las activas.
  *     parameters:
  *       - in: query
  *         name: page
@@ -84,17 +89,19 @@ const router = express.Router();
  *                     hasNextPage: { type: boolean }
  *                     hasPrevPage: { type: boolean }
  *       401: { $ref: '#/components/responses/Unauthorized' }
- *       403: { $ref: '#/components/responses/Forbidden' }
  *       422: { $ref: '#/components/responses/Unprocessable' }
  */
 
 // Ruta para listar rutinas: primero validamos los parametros de la URL
+// La lectura la puede hacer cualquier sesion: el controlador pasa el rol al servicio
+// y el servicio decide si devuelve solo las activas o todas
 router.get('/', ValidateQuery(Schemas.query.workout), controller.listWorkouts);
 
 // Ruta para crear una rutina nueva
+// Solo ADMIN: escribir en el catalogo es cosa del backoffice
 // Primero comprobamos que los datos cumplen el esquema de Joi
 // Si son correctos llamamos a la funcion createWorkout del controlador
-router.post('/', ValidateJoi(Schemas.workout.create), controller.createWorkout);
+router.post('/', RequireRole('ADMIN'), ValidateJoi(Schemas.workout.create), controller.createWorkout);
 
 /**
  * @openapi
@@ -105,6 +112,8 @@ router.post('/', ValidateJoi(Schemas.workout.create), controller.createWorkout);
  *     description: >
  *       Los ejercicios se guardan como ids, pero esta respuesta los devuelve ya resueltos:
  *       cada elemento de exercises es un objeto Exercise entero, no un id.
+ *       Cualquier sesión con token puede consultarlo. Un ADMIN ve también las rutinas borradas;
+ *       para el resto, una rutina borrada responde 404.
  *     parameters:
  *       - in: path
  *         name: workoutId
@@ -115,7 +124,6 @@ router.post('/', ValidateJoi(Schemas.workout.create), controller.createWorkout);
  *       200: { $ref: '#/components/responses/WorkoutOne' }
  *       400: { $ref: '#/components/responses/BadRequest' }
  *       401: { $ref: '#/components/responses/Unauthorized' }
- *       403: { $ref: '#/components/responses/Forbidden' }
  *       404: { $ref: '#/components/responses/NotFound' }
  */
 
@@ -133,6 +141,7 @@ router.get('/:workoutId', ValidateId('workoutId'), controller.readWorkout);
  *       Hay que enviar la rutina entera, no solo los campos que cambian.
  *       Los ejercicios se envian como una lista de ids (textos) de ejercicios ya existentes.
  *       La respuesta devuelve la rutina actualizada, con esos mismos ids en exercises.
+ *       Solo un ADMIN puede modificarla.
  *     parameters:
  *       - in: path
  *         name: workoutId
@@ -158,8 +167,9 @@ router.get('/:workoutId', ValidateId('workoutId'), controller.readWorkout);
  */
 
 // Ruta para actualizar una rutina
+// Solo ADMIN, igual que la creacion: el catalogo lo mantiene el backoffice
 // Primero comprobamos que el ID sea correcto y despues validamos los datos recibidos
-router.put('/:workoutId', ValidateId('workoutId'), ValidateJoi(Schemas.workout.update), controller.updateWorkout);
+router.put('/:workoutId', RequireRole('ADMIN'), ValidateId('workoutId'), ValidateJoi(Schemas.workout.update), controller.updateWorkout);
 
 // Exportamos el router para poder utilizar estas rutas en la aplicacion
 export = router;
