@@ -55,6 +55,14 @@ const router = express.Router();
  *       - in: query
  *         name: dayOfWeek
  *         schema: { type: string, enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY] }
+ *       - in: query
+ *         name: sort
+ *         description: Columna por la que se ordena (por defecto name)
+ *         schema: { type: string, enum: [name, description, dayOfWeek] }
+ *       - in: query
+ *         name: order
+ *         description: Sentido del orden (por defecto asc)
+ *         schema: { type: string, enum: [asc, desc], default: asc }
  *     responses:
  *       200:
  *         description: Una página de rutinas
