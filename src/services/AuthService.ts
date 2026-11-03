@@ -32,12 +32,13 @@ export const register = (data: Pick<IUser, 'name' | 'email' | 'password'>) => {
 
 // Comprueba el email y la contraseña. Si son correctos devuelve los dos tokens y el usuario;
 // si no, devuelve null y el controlador responde 401.
+// Los usuarios borrados logicamente no pueden entrar: se buscan como si no existieran.
 export const login = async (email: string, password: string) => {
     // La contraseña tiene select: false en el modelo, asi que hay que pedirla a proposito
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const user = await User.findOne({ email: email.toLowerCase(), isDeleted: false }).select('+password');
 
     // Si el email no existe o la contraseña no coincide, devolvemos lo mismo (null).
-    // Asi el que llama no puede saber que emails estan registrados.
+    // Asi el que llama no puede saber que emails estan registrados, ni cuales estan borrados.
     if (!user || !(await verifyPassword(password, user.password))) {
         return null;
     }
@@ -71,12 +72,13 @@ export const adminLogin = async (email: string, password: string) => {
 
 // Recibe un refresh token y, si es valido, devuelve un access token nuevo.
 // Si el token esta caducado o mal firmado, jwt.verify lanza un error y el ErrorHandler responde 401.
-// Si el usuario ya no existe devuelve null y el controlador responde 401.
+// Si el usuario ya no existe, o esta borrado logicamente, devuelve null y el controlador responde 401.
 export const refresh = async (refreshToken: string) => {
     const payload = jwt.verify(refreshToken, config.jwt.refreshSecret) as RefreshTokenPayload;
 
-    // Volvemos a leer el usuario de la base de datos: asi el token nuevo lleva su rol actual
-    const user = await User.findById(payload.sub);
+    // Volvemos a leer el usuario de la base de datos: asi el token nuevo lleva su rol actual.
+    // Exigimos isDeleted: false para que borrar un usuario le corte tambien la renovacion.
+    const user = await User.findOne({ _id: payload.sub, isDeleted: false });
 
     if (!user) {
         return null;
