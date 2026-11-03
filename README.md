@@ -54,26 +54,46 @@ Todo salvo `/auth/*`, `/ping` y `/api-docs` pide el token en la cabecera `Author
 |---|---|---|---|
 | POST | `/auth/register` | cualquiera | Crea un usuario `USER`: 201 `{ user }`, sin token |
 | POST | `/auth/login` | cualquiera | Devuelve `{ token, refreshToken, user }` o 401 |
+| POST | `/auth/admin/login` | solo `ADMIN` | Login del backoffice: 200 igual que `/auth/login`, 401 si las credenciales no son correctas, 403 si el usuario no es `ADMIN` |
 | POST | `/auth/refresh` | su refresh token | Devuelve un `{ token }` nuevo o 401 |
-| GET | `/users` | cualquier sesión | Lista de usuarios para el chat: solo `_id` y `name` |
+| GET | `/users` | cualquier sesión | Lista de usuarios para el chat: solo `_id` y `name`. Un `ADMIN` ve todos; el resto, solo los activos |
 | POST | `/users` | `ADMIN` | Crea un usuario: 201 `{ user }` |
 | GET | `/users/:userId` | `ADMIN` | Devuelve `{ user }` o 404 |
-| PUT | `/users/:userId` | `ADMIN` | Actualiza el usuario: 200 `{ user }` o 404 |
-| DELETE | `/users/:userId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404 |
+| PUT | `/users/:userId` | `ADMIN` | Actualiza el usuario; devuelve `{ user }` y 404 si no existe |
+| DELETE | `/users/:userId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404. Un admin no puede borrarse a sí mismo |
 | DELETE | `/users/:userId/hard` | `ADMIN` | Borrado definitivo de la base de datos: 204 o 404 |
+| GET | `/exercises` | cualquier sesión | Lista paginada de ejercicios, con buscador y filtro por categoría. Un `ADMIN` ve todos; el resto, solo los activos |
 | POST | `/exercises` | `ADMIN` | Crea un ejercicio: 201 `{ exercise }` |
-| GET | `/exercises/:exerciseId` | `ADMIN` | Devuelve `{ exercise }` o 404 |
-| PUT | `/exercises/:exerciseId` | `ADMIN` | Actualiza el ejercicio: 200 `{ exercise }` o 404 |
+| GET | `/exercises/:exerciseId` | cualquier sesión | Devuelve `{ exercise }` o 404. Si el ejercicio está borrado, 404 para quien no es `ADMIN` |
+| PUT | `/exercises/:exerciseId` | `ADMIN` | Actualiza el ejercicio; devuelve `{ exercise }` y 404 si no existe o está borrado |
 | DELETE | `/exercises/:exerciseId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404 |
 | DELETE | `/exercises/:exerciseId/hard` | `ADMIN` | Borrado definitivo; lo quita también de las rutinas: 204 o 404 |
+| GET | `/workouts` | cualquier sesión | Lista paginada de rutinas, con buscador y filtro por día. Un `ADMIN` ve todas; el resto, solo las activas |
 | POST | `/workouts` | `ADMIN` | Crea una rutina: 201 `{ workout }` |
-| GET | `/workouts/:workoutId` | `ADMIN` | Devuelve `{ workout }` con sus ejercicios completos |
-| PUT | `/workouts/:workoutId` | `ADMIN` | Actualiza la rutina: 200 `{ workout }` o 404 |
+| GET | `/workouts/:workoutId` | cualquier sesión | Devuelve `{ workout }` con sus ejercicios completos. Si la rutina está borrada, 404 para quien no es `ADMIN` |
+| PUT | `/workouts/:workoutId` | `ADMIN` | Actualiza la rutina; devuelve `{ workout }` y 404 si no existe o está borrada |
 | DELETE | `/workouts/:workoutId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404 |
 | DELETE | `/workouts/:workoutId/hard` | `ADMIN` | Borrado definitivo de la base de datos: 204 o 404 |
 | GET | `/ping` | cualquiera | Healthcheck: `{ hello: 'world' }` |
 
-No hay listados ni `DELETE`: cada servicio solo crea, lee por id y actualiza. Los cuerpos que se envían:
+### Quién ve qué
+
+Los listados de ejercicios, rutinas y usuarios, y el detalle de ejercicios y rutinas, son la misma ruta
+para todo el mundo; lo que cambia es el contenido según el rol que va dentro del token:
+
+- **`ADMIN`**: consulta todo, también los elementos borrados (`isDeleted: true`).
+- **Cualquier otra sesión**: solo los elementos **activos**. Un elemento borrado no sale en los listados y su
+  detalle responde 404, como si no existiera.
+
+Un elemento está **activo** cuando su campo `isDeleted` es `false`. El borrado es siempre lógico: el documento
+sigue en MongoDB con `isDeleted: true` y `deletedAt` con la fecha, y la API **no tiene ninguna ruta `DELETE`**.
+Las escrituras (`POST` y `PUT`) son solo de `ADMIN`.
+
+Sin sesión, cualquier ruta salvo `/auth/*`, `/ping` y `/api-docs` responde 401: el token se comprueba antes de
+mirar el rol, y un rol insuficiente responde 403. Un usuario borrado tampoco puede entrar: `POST /auth/login`
+y `POST /auth/refresh` responden 401 con sus credenciales, como si no existiera.
+
+Los cuerpos que se envían:
 
 - **Ejercicios**: `name`, `category` (una de `CHEST`, `BACK`, `LEGS`, `SHOULDERS`, `ARMS`, `CORE`, `CARDIO`),
   `sets` y `reps` (enteros, opcionales).
