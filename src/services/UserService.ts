@@ -27,8 +27,26 @@ export const createUser = (data: NewUser): Promise<HydratedDocument<IUserModel>>
 // Funcion que busca un usuario por su ID en la base de datos
 export const getUserById = (userId: string): Promise<HydratedDocument<IUserModel> | null> => {
 
-    // Buscamos el usuario usando el ID que hemos recibido
+    // Buscamos el usuario usando el ID que hemos recibido.
+    // Esta ruta es solo para ADMIN, que puede ver tambien los usuarios borrados logicamente
     return User.findById(userId);
+
+};
+
+// Borrado logico: el usuario sigue en la base de datos, pero marcado como borrado.
+// Deja de salir en los listados y su email queda libre (indice unico parcial del modelo).
+// Devuelve null si no existe o ya estaba borrado.
+export const softDeleteUser = (userId: string): Promise<HydratedDocument<IUserModel> | null> => {
+
+    return User.findOneAndUpdate({ _id: userId, isDeleted: false }, { isDeleted: true, deletedAt: new Date() }, { new: true });
+
+};
+
+// Borrado definitivo: el usuario desaparece de la base de datos para siempre.
+// Funciona tambien con usuarios ya borrados logicamente. Devuelve null si no existe.
+export const hardDeleteUser = (userId: string): Promise<HydratedDocument<IUserModel> | null> => {
+
+    return User.findByIdAndDelete(userId);
 
 };
 
@@ -81,7 +99,7 @@ export const listUsers = async ({ page, limit, search, sort, order }: ListUsersI
     // El nombre no es unico, asi que desempatamos con _id para que el orden sea estable entre paginas
     const [users, total] = await Promise.all([
         // Ordenamos por la columna pedida (por defecto el nombre)
-        User.find(filter).select('_id name').sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).lean(),
+        User.find(filter).select(isAdmin ? '_id name isDeleted' : '_id name').sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).lean(),
         User.countDocuments(filter)
     ]);
 
@@ -97,6 +115,10 @@ export default {
     getUserById,
 
     updateUser,
+
+    softDeleteUser,
+
+    hardDeleteUser,
 
     listUsers
 

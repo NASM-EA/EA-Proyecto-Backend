@@ -172,4 +172,54 @@ router.get('/:workoutId', ValidateId('workoutId'), controller.readWorkout);
 router.put('/:workoutId', RequireRole('ADMIN'), ValidateId('workoutId'), ValidateJoi(Schemas.workout.update), controller.updateWorkout);
 
 // Exportamos el router para poder utilizar estas rutas en la aplicacion
+/**
+ * @openapi
+ * /workouts/{workoutId}:
+ *   delete:
+ *     tags: [Workouts]
+ *     summary: Borrado lógico de una rutina
+ *     description: >
+ *       Marca la rutina como borrada (isDeleted). Sigue en la base de datos, pero deja de salir
+ *       en los listados y su nombre queda libre. Solo ADMIN.
+ *     parameters:
+ *       - in: path
+ *         name: workoutId
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       204: { description: Rutina borrada lógicamente }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
+
+// Borrado logico: solo marca la rutina como borrada
+router.delete('/:workoutId', RequireRole('ADMIN'), ValidateId('workoutId'), controller.softDeleteWorkout);
+
+/**
+ * @openapi
+ * /workouts/{workoutId}/hard:
+ *   delete:
+ *     tags: [Workouts]
+ *     summary: Borrado definitivo de una rutina
+ *     description: >
+ *       Elimina la rutina de la base de datos para siempre. Sus ejercicios no se borran.
+ *       No se puede deshacer. Solo ADMIN.
+ *     parameters:
+ *       - in: path
+ *         name: workoutId
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       204: { description: Rutina eliminada de la base de datos }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
+
+// Borrado definitivo: elimina la rutina de la base de datos
+router.delete('/:workoutId/hard', RequireRole('ADMIN'), ValidateId('workoutId'), controller.hardDeleteWorkout);
+
 export = router;

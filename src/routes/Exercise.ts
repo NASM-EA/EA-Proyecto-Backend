@@ -153,5 +153,55 @@ router.get('/:exerciseId', ValidateId('exerciseId'), controller.readExercise);
 // Primero comprobamos que el ID sea correcto y despues validamos los datos recibidos
 router.put('/:exerciseId', RequireRole('ADMIN'), ValidateId('exerciseId'), ValidateJoi(Schemas.exercise.update), controller.updateExercise);
 
+/**
+ * @openapi
+ * /exercises/{exerciseId}:
+ *   delete:
+ *     tags: [Exercises]
+ *     summary: Borrado lógico de un ejercicio
+ *     description: >
+ *       Marca el ejercicio como borrado (isDeleted). Sigue en la base de datos, pero deja de salir
+ *       en los listados y su nombre queda libre. Solo ADMIN.
+ *     parameters:
+ *       - in: path
+ *         name: exerciseId
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       204: { description: Ejercicio borrado lógicamente }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
+
+// Borrado logico: solo marca el ejercicio como borrado
+router.delete('/:exerciseId', RequireRole('ADMIN'), ValidateId('exerciseId'), controller.softDeleteExercise);
+
+/**
+ * @openapi
+ * /exercises/{exerciseId}/hard:
+ *   delete:
+ *     tags: [Exercises]
+ *     summary: Borrado definitivo de un ejercicio
+ *     description: >
+ *       Elimina el ejercicio de la base de datos para siempre y lo quita de las rutinas que lo usaban.
+ *       No se puede deshacer. Solo ADMIN.
+ *     parameters:
+ *       - in: path
+ *         name: exerciseId
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       204: { description: Ejercicio eliminado de la base de datos }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ */
+
+// Borrado definitivo: elimina el ejercicio de la base de datos
+router.delete('/:exerciseId/hard', RequireRole('ADMIN'), ValidateId('exerciseId'), controller.hardDeleteExercise);
+
 // Exportamos el router para poder utilizar estas rutas en la aplicacion
 export = router;

@@ -83,5 +83,45 @@ const updateUser = async (req: Request<{ userId: string }>, res: Response, next:
     }
 };
 
+// Función para el borrado lógico: marca al usuario como borrado (isDeleted) sin quitarlo de la base de datos
+const softDeleteUser = async (req: Request<{ userId: string }>, res: Response, next: NextFunction) => {
+    // Un admin no puede borrarse a si mismo: se quedaria sin acceso al backoffice
+    if (req.user?.id === req.params.userId) {
+        return res.status(400).json({ message: 'No puedes borrarte a ti mismo' });
+    }
+
+    try {
+        const user = await UserService.softDeleteUser(req.params.userId);
+
+        if (user) {
+            // 204: se ha hecho y no hay nada que devolver
+            res.status(204).send();
+        } else {
+            res.status(404).json({ message: 'not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Función para el borrado definitivo: elimina al usuario de la base de datos para siempre
+const hardDeleteUser = async (req: Request<{ userId: string }>, res: Response, next: NextFunction) => {
+    if (req.user?.id === req.params.userId) {
+        return res.status(400).json({ message: 'No puedes borrarte a ti mismo' });
+    }
+
+    try {
+        const user = await UserService.hardDeleteUser(req.params.userId);
+
+        if (user) {
+            res.status(204).send();
+        } else {
+            res.status(404).json({ message: 'not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Exportamos todas las funciones para poder utilizarlas desde las rutas
-export default { listUsers, createUser, readUser, updateUser };
+export default { listUsers, createUser, readUser, updateUser, softDeleteUser, hardDeleteUser };

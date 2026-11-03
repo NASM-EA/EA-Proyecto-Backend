@@ -85,5 +85,36 @@ const listWorkouts = async (req: Request, res: Response, next: NextFunction) => 
 };
 
 // Exportamos todas las funciones para poder utilizarlas desde las rutas
-export default { createWorkout, readWorkout, updateWorkout, listWorkouts };
+// Función para el borrado lógico: marca la rutina como borrada (isDeleted) sin quitarla de la base de datos
+const softDeleteWorkout = async (req: Request<{ workoutId: string }>, res: Response, next: NextFunction) => {
+    try {
+        const workout = await WorkoutService.softDeleteWorkout(req.params.workoutId);
+
+        if (workout) {
+            // 204: se ha hecho y no hay nada que devolver
+            res.status(204).send();
+        } else {
+            res.status(404).json({ message: 'not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Función para el borrado definitivo: elimina la rutina de la base de datos para siempre
+const hardDeleteWorkout = async (req: Request<{ workoutId: string }>, res: Response, next: NextFunction) => {
+    try {
+        const workout = await WorkoutService.hardDeleteWorkout(req.params.workoutId);
+
+        if (workout) {
+            res.status(204).send();
+        } else {
+            res.status(404).json({ message: 'not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+export default { createWorkout, readWorkout, updateWorkout, softDeleteWorkout, hardDeleteWorkout, listWorkouts };
 

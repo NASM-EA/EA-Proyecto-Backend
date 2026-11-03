@@ -44,7 +44,23 @@ export const getWorkoutById = (workoutId: string, isAdmin: boolean): Promise<Wor
     // En los dos casos cargamos los ejercicios referenciados.
     return isAdmin
         ? Workout.findById(workoutId).populate('exercises')
-        : Workout.findOne({ _id: workoutId, isDeleted: false }).populate('exercises');
+        : Workout.findOne({ _id: workoutId, isDeleted: false }).populate({ path: 'exercises', match: { isDeleted: false } });
+
+};
+
+// Borrado logico: la rutina sigue en la base de datos, pero marcada como borrada.
+// Deja de salir en los listados y su nombre queda libre. Devuelve null si no existe o ya estaba borrada.
+export const softDeleteWorkout = (workoutId: string): Promise<WorkoutDocument | null> => {
+
+    return Workout.findOneAndUpdate({ _id: workoutId, isDeleted: false }, { isDeleted: true, deletedAt: new Date() }, { new: true });
+
+};
+
+// Borrado definitivo: la rutina desaparece de la base de datos para siempre.
+// Los ejercicios de la rutina no se borran. Funciona tambien con rutinas ya borradas logicamente.
+export const hardDeleteWorkout = (workoutId: string): Promise<WorkoutDocument | null> => {
+
+    return Workout.findByIdAndDelete(workoutId);
 
 };
 
@@ -92,7 +108,7 @@ export const listWorkouts = async ({ page, limit, search, dayOfWeek, sort, order
     // Pedimos la pagina y el total a la vez, con el MISMO filtro
     const [workouts, total] = await Promise.all([
         // Ordenamos por la columna pedida (por defecto el nombre)
-        Workout.find(filter).sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).populate('exercises'),
+        Workout.find(filter).sort(buildSort(sort, order, 'name')).skip(getSkip(page, limit)).limit(limit).populate({ path: 'exercises', match: isAdmin ? {} : { isDeleted: false } }),
         Workout.countDocuments(filter)
     ]);
 
@@ -108,6 +124,10 @@ export default {
     getWorkoutById,
 
     updateWorkout,
+
+    softDeleteWorkout,
+
+    hardDeleteWorkout,
 
     listWorkouts
 
