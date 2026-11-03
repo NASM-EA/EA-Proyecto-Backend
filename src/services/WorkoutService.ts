@@ -32,13 +32,19 @@ export const createWorkout = (data: NewWorkout): Promise<WorkoutDocument> => {
 };
 
 // Funcion que busca una rutina por su ID en la base de datos.
+// El ADMIN consulta todas las rutinas, tambien las borradas logicamente.
+// Cualquier otra sesion solo ve las activas: si la rutina esta borrada se comporta
+// como si no existiera y el controlador responde 404.
 // El populate carga los documentos completos de Exercise en lugar de dejar los ObjectId,
 // para que el controlador pueda responder con los ejercicios enteros. Si no hay ejercicios,
-// el populate mantiene una lista vacia. Devuelve null si la rutina no existe.
-export const getWorkoutById = (workoutId: string): Promise<WorkoutDocument | null> => {
+// el populate mantiene una lista vacia.
+export const getWorkoutById = (workoutId: string, isAdmin: boolean): Promise<WorkoutDocument | null> => {
 
-    // Buscamos la rutina por ID y cargamos sus ejercicios referenciados
-    return Workout.findById(workoutId).populate('exercises');
+    // Con el rol ADMIN buscamos por ID a secas; el resto exige ademas isDeleted: false.
+    // En los dos casos cargamos los ejercicios referenciados.
+    return isAdmin
+        ? Workout.findById(workoutId).populate('exercises')
+        : Workout.findOne({ _id: workoutId, isDeleted: false }).populate('exercises');
 
 };
 
@@ -65,11 +71,12 @@ export const updateWorkout = (workoutId: string, data: UpdateWorkoutInput): Prom
 // (sort es la columna por la que ordenar y order el sentido: asc o desc)
 export type ListWorkoutsInput = { page: number; limit: number; search?: string; dayOfWeek?: DayOfWeek; sort?: string; order?: 'asc' | 'desc' };
 
-// Devuelve una pagina de rutinas, filtrada por dia y/o por texto en nombre o descripcion
-export const listWorkouts = async ({ page, limit, search, dayOfWeek, sort, order }: ListWorkoutsInput) => {
+// Devuelve una pagina de rutinas, filtrada por dia y/o por texto en nombre o descripcion.
+// El ADMIN ve todas las rutinas; cualquier otra sesion solo las activas (isDeleted: false).
+export const listWorkouts = async ({ page, limit, search, dayOfWeek, sort, order }: ListWorkoutsInput, isAdmin: boolean) => {
 
-    // Solo las rutinas no borradas logicamente
-    const filter: Record<string, unknown> = { isDeleted: false };
+    // El ADMIN consulta todo, asi que su filtro empieza vacio; el resto empieza solo con las activas
+    const filter: Record<string, unknown> = isAdmin ? {} : { isDeleted: false };
 
     // Filtro exacto por dia de la semana, si se ha pedido
     if (dayOfWeek) {

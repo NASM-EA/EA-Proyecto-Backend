@@ -23,8 +23,11 @@ const readExercise = async (req: Request<{ exerciseId: string }>, res: Response,
     const exerciseId = req.params.exerciseId;
 
     try {
+        // El servicio necesita saber el rol de la sesion: solo un ADMIN ve los ejercicios borrados
+        const isAdmin = req.user?.role === 'ADMIN';
+
         // Buscamos el ejercicio usando el servicio
-        const exercise = await ExerciseService.getExerciseById(exerciseId);
+        const exercise = await ExerciseService.getExerciseById(exerciseId, isAdmin);
 
         // Comprobamos si hemos encontrado el ejercicio
         if (exercise) {
@@ -64,10 +67,14 @@ const updateExercise = async (req: Request<{ exerciseId: string }>, res: Respons
 };
 
 // Función para listar ejercicios con paginación y buscador
-const listExercises = async (_req: Request, res: Response, next: NextFunction) => {
+const listExercises = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // El servicio necesita saber el rol de la sesion: el ADMIN ve todos los ejercicios
+        // y cualquier otra sesion solo los activos
+        const isAdmin = req.user?.role === 'ADMIN';
+
         // ValidateQuery ya ha comprobado y convertido los parametros de la URL
-        const result = await ExerciseService.listExercises(res.locals.query);
+        const result = await ExerciseService.listExercises(res.locals.query, isAdmin);
 
         // Devolvemos la pagina de ejercicios junto con los datos de paginacion
         res.status(200).json(result);
