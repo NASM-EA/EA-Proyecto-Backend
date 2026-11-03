@@ -43,7 +43,9 @@ export = router;
  *   post:
  *     tags: [Auth]
  *     summary: Inicia sesion
- *     description: Devuelve el access token (para la cabecera Authorization), el refresh token y el usuario.
+ *     description: >
+ *       Devuelve el access token (para la cabecera Authorization), el refresh token y el usuario.
+ *       Un usuario borrado no puede entrar: sus credenciales responden 401 igual que unas incorrectas.
  *     security: []
  *     requestBody:
  *       required: true
@@ -78,7 +80,9 @@ export = router;
  *   post:
  *     tags: [Auth]
  *     summary: Pide un access token nuevo
- *     description: Se usa cuando el access token ha caducado. Se envia el refresh token que devolvio el login.
+ *     description: >
+ *       Se usa cuando el access token ha caducado. Se envia el refresh token que devolvio el login.
+ *       Si el usuario ya no existe, o esta borrado, el refresh token deja de servir y responde 401.
  *     security: []
  *     requestBody:
  *       required: true
