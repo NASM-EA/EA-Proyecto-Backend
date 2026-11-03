@@ -50,6 +50,25 @@ export const login = async (email: string, password: string) => {
     };
 };
 
+// Login del backoffice: el mismo email y la misma contraseña que /auth/login, pero solo entra un ADMIN.
+// Reutiliza login() para no repetir la comprobacion de las credenciales y despues mira el rol.
+// Devuelve null si las credenciales no son correctas, 'FORBIDDEN' si son correctas pero el usuario
+// no es ADMIN, y la sesion ({ token, refreshToken, user }) si es ADMIN.
+export const adminLogin = async (email: string, password: string) => {
+    const session = await login(email, password);
+
+    if (!session) {
+        return null;
+    }
+
+    // El rol se lee del usuario que acabamos de cargar de la base de datos, no de lo que manda el cliente
+    if (session.user.role !== 'ADMIN') {
+        return 'FORBIDDEN' as const;
+    }
+
+    return session;
+};
+
 // Recibe un refresh token y, si es valido, devuelve un access token nuevo.
 // Si el token esta caducado o mal firmado, jwt.verify lanza un error y el ErrorHandler responde 401.
 // Si el usuario ya no existe devuelve null y el controlador responde 401.
@@ -66,4 +85,4 @@ export const refresh = async (refreshToken: string) => {
     return { token: signAccessToken(user) };
 };
 
-export default { register, login, refresh };
+export default { register, login, adminLogin, refresh };

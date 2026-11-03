@@ -32,6 +32,27 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     }
 };
 
+// Función para iniciar sesión en el backoffice: solo entra un usuario con rol ADMIN
+const adminLogin = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const result = await AuthService.adminLogin(req.body.email, req.body.password);
+
+        if (!result) {
+            // 401: no se ha podido identificar al usuario, igual que en /auth/login
+            res.status(401).json({ message: 'Email o contraseña incorrectos' });
+        } else if (result === 'FORBIDDEN') {
+            // 403: sé quién eres, pero no eres administrador.
+            // El mensaje es el mismo que devuelve RequireRole, así el frontend muestra uno solo
+            res.status(403).json({ message: 'Necesitas el rol ADMIN' });
+        } else {
+            // Es ADMIN: devolvemos { token, refreshToken, user }
+            res.status(200).json(result);
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Función para pedir un access token nuevo con el refresh token
 const refresh = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -49,4 +70,4 @@ const refresh = async (req: Request, res: Response, next: NextFunction) => {
     }
 };
 
-export default { register, login, refresh };
+export default { register, login, adminLogin, refresh };
