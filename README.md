@@ -60,14 +60,20 @@ Todo salvo `/auth/*`, `/ping` y `/api-docs` pide el token en la cabecera `Author
 | POST | `/users` | `ADMIN` | Crea un usuario: 201 `{ user }` |
 | GET | `/users/:userId` | `ADMIN` | Devuelve `{ user }` o 404 |
 | PUT | `/users/:userId` | `ADMIN` | Actualiza el usuario; devuelve `{ user }` y 404 si no existe |
+| DELETE | `/users/:userId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404. Un admin no puede borrarse a sí mismo |
+| DELETE | `/users/:userId/hard` | `ADMIN` | Borrado definitivo de la base de datos: 204 o 404 |
 | GET | `/exercises` | cualquier sesión | Lista paginada de ejercicios, con buscador y filtro por categoría. Un `ADMIN` ve todos; el resto, solo los activos |
 | POST | `/exercises` | `ADMIN` | Crea un ejercicio: 201 `{ exercise }` |
 | GET | `/exercises/:exerciseId` | cualquier sesión | Devuelve `{ exercise }` o 404. Si el ejercicio está borrado, 404 para quien no es `ADMIN` |
 | PUT | `/exercises/:exerciseId` | `ADMIN` | Actualiza el ejercicio; devuelve `{ exercise }` y 404 si no existe o está borrado |
+| DELETE | `/exercises/:exerciseId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404 |
+| DELETE | `/exercises/:exerciseId/hard` | `ADMIN` | Borrado definitivo; lo quita también de las rutinas: 204 o 404 |
 | GET | `/workouts` | cualquier sesión | Lista paginada de rutinas, con buscador y filtro por día. Un `ADMIN` ve todas; el resto, solo las activas |
 | POST | `/workouts` | `ADMIN` | Crea una rutina: 201 `{ workout }` |
 | GET | `/workouts/:workoutId` | cualquier sesión | Devuelve `{ workout }` con sus ejercicios completos. Si la rutina está borrada, 404 para quien no es `ADMIN` |
 | PUT | `/workouts/:workoutId` | `ADMIN` | Actualiza la rutina; devuelve `{ workout }` y 404 si no existe o está borrada |
+| DELETE | `/workouts/:workoutId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404 |
+| DELETE | `/workouts/:workoutId/hard` | `ADMIN` | Borrado definitivo de la base de datos: 204 o 404 |
 | GET | `/ping` | cualquiera | Healthcheck: `{ hello: 'world' }` |
 
 ### Quién ve qué

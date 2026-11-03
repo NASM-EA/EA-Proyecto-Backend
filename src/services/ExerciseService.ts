@@ -1,5 +1,6 @@
 import { HydratedDocument } from 'mongoose';
 import Exercise, { ExerciseCategory, IExercise } from '../models/Exercise';
+import Workout from '../models/Workout';
 import { buildPageInfo, buildSort, escapeRegex, getSkip } from '../utils/pagination';
 
 // Datos necesarios para crear un ejercicio.
@@ -32,6 +33,30 @@ export const getExerciseById = (exerciseId: string, isAdmin: boolean): Promise<E
 
     // Con el rol ADMIN buscamos por ID a secas; el resto exige ademas isDeleted: false
     return isAdmin ? Exercise.findById(exerciseId) : Exercise.findOne({ _id: exerciseId, isDeleted: false });
+
+};
+
+// Borrado logico: el ejercicio sigue en la base de datos, pero marcado como borrado.
+// Deja de salir en los listados y su nombre queda libre (indice unico parcial del modelo).
+// Devuelve null si no existe o ya estaba borrado.
+export const softDeleteExercise = (exerciseId: string): Promise<ExerciseDocument | null> => {
+
+    return Exercise.findOneAndUpdate({ _id: exerciseId, isDeleted: false }, { isDeleted: true, deletedAt: new Date() }, { new: true });
+
+};
+
+// Borrado definitivo: el ejercicio desaparece de la base de datos para siempre.
+// Tambien se quita de las rutinas que lo usaban, para que no queden ids que apunten a nada.
+// Funciona tambien con ejercicios que ya estaban borrados logicamente. Devuelve null si no existe.
+export const hardDeleteExercise = async (exerciseId: string): Promise<ExerciseDocument | null> => {
+
+    const exercise = await Exercise.findByIdAndDelete(exerciseId);
+
+    if (exercise) {
+        await Workout.updateMany({ exercises: exercise._id }, { $pull: { exercises: exercise._id } });
+    }
+
+    return exercise;
 
 };
 
@@ -85,6 +110,10 @@ export default {
     getExerciseById,
 
     updateExercise,
+
+    softDeleteExercise,
+
+    hardDeleteExercise,
 
     listExercises
 

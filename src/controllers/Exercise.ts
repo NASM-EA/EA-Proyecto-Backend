@@ -83,5 +83,36 @@ const listExercises = async (req: Request, res: Response, next: NextFunction) =>
     }
 };
 
+// Función para el borrado lógico: marca el ejercicio como borrado (isDeleted) sin quitarlo de la base de datos
+const softDeleteExercise = async (req: Request<{ exerciseId: string }>, res: Response, next: NextFunction) => {
+    try {
+        const exercise = await ExerciseService.softDeleteExercise(req.params.exerciseId);
+
+        if (exercise) {
+            // 204: se ha hecho y no hay nada que devolver
+            res.status(204).send();
+        } else {
+            res.status(404).json({ message: 'not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Función para el borrado definitivo: elimina el ejercicio de la base de datos para siempre
+const hardDeleteExercise = async (req: Request<{ exerciseId: string }>, res: Response, next: NextFunction) => {
+    try {
+        const exercise = await ExerciseService.hardDeleteExercise(req.params.exerciseId);
+
+        if (exercise) {
+            res.status(204).send();
+        } else {
+            res.status(404).json({ message: 'not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Exportamos todas las funciones para poder utilizarlas desde las rutas
-export default { createExercise, readExercise, updateExercise, listExercises };
+export default { createExercise, readExercise, updateExercise, softDeleteExercise, hardDeleteExercise, listExercises };
