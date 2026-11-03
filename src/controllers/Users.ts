@@ -123,5 +123,35 @@ const hardDeleteUser = async (req: Request<{ userId: string }>, res: Response, n
     }
 };
 
+// Borrado logico de varios usuarios a la vez: recibe { ids: [...] } y devuelve cuantos se han borrado
+const softDeleteManyUsers = async (req: Request, res: Response, next: NextFunction) => {
+    // Un admin no puede borrarse a si mismo: se quedaria sin acceso al backoffice
+    if (req.user && req.body.ids.includes(req.user.id)) {
+        return res.status(400).json({ message: 'No puedes borrarte a ti mismo' });
+    }
+
+    try {
+        const deleted = await UserService.softDeleteManyUsers(req.body.ids);
+        res.status(200).json({ deleted });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Borrado definitivo de varios usuarios a la vez: recibe { ids: [...] } y devuelve cuantos se han eliminado
+const hardDeleteManyUsers = async (req: Request, res: Response, next: NextFunction) => {
+    // Un admin no puede borrarse a si mismo: se quedaria sin acceso al backoffice
+    if (req.user && req.body.ids.includes(req.user.id)) {
+        return res.status(400).json({ message: 'No puedes borrarte a ti mismo' });
+    }
+
+    try {
+        const deleted = await UserService.hardDeleteManyUsers(req.body.ids);
+        res.status(200).json({ deleted });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Exportamos todas las funciones para poder utilizarlas desde las rutas
-export default { listUsers, createUser, readUser, updateUser, softDeleteUser, hardDeleteUser };
+export default { listUsers, createUser, readUser, updateUser, softDeleteUser, hardDeleteUser, softDeleteManyUsers, hardDeleteManyUsers };
