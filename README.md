@@ -54,6 +54,7 @@ Todo salvo `/auth/*`, `/ping` y `/api-docs` pide el token en la cabecera `Author
 |---|---|---|---|
 | POST | `/auth/register` | cualquiera | Crea un usuario `USER`: 201 `{ user }`, sin token |
 | POST | `/auth/login` | cualquiera | Devuelve `{ token, refreshToken, user }` o 401 |
+| POST | `/auth/admin/login` | solo `ADMIN` | Login del backoffice: 200 igual que `/auth/login`, 401 si las credenciales no son correctas, 403 si el usuario no es `ADMIN` |
 | POST | `/auth/refresh` | su refresh token | Devuelve un `{ token }` nuevo o 401 |
 | GET | `/users` | cualquier sesión | Lista de usuarios para el chat: solo `_id` y `name` |
 | POST | `/users` | `ADMIN` | Crea un usuario: 201 `{ user }` |
