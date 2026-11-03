@@ -114,5 +114,25 @@ const hardDeleteExercise = async (req: Request<{ exerciseId: string }>, res: Res
     }
 };
 
+// Borrado logico de varios ejercicios a la vez: recibe { ids: [...] } y devuelve cuantos se han borrado
+const softDeleteManyExercises = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const deleted = await ExerciseService.softDeleteManyExercises(req.body.ids);
+        res.status(200).json({ deleted });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Borrado definitivo de varios ejercicios a la vez: recibe { ids: [...] } y devuelve cuantos se han eliminado
+const hardDeleteManyExercises = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const deleted = await ExerciseService.hardDeleteManyExercises(req.body.ids);
+        res.status(200).json({ deleted });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Exportamos todas las funciones para poder utilizarlas desde las rutas
-export default { createExercise, readExercise, updateExercise, softDeleteExercise, hardDeleteExercise, listExercises };
+export default { createExercise, readExercise, updateExercise, softDeleteExercise, hardDeleteExercise, softDeleteManyExercises, hardDeleteManyExercises, listExercises };

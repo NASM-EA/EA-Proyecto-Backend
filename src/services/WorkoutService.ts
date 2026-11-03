@@ -56,6 +56,24 @@ export const softDeleteWorkout = (workoutId: string): Promise<WorkoutDocument | 
 
 };
 
+// Borrado logico de varias rutinas a la vez. Devuelve cuantas se han borrado.
+export const softDeleteManyWorkouts = async (ids: string[]): Promise<number> => {
+
+    const result = await Workout.updateMany({ _id: { $in: ids }, isDeleted: false }, { isDeleted: true, deletedAt: new Date() });
+
+    return result.modifiedCount;
+
+};
+
+// Borrado definitivo de varias rutinas a la vez. Sus ejercicios no se borran.
+export const hardDeleteManyWorkouts = async (ids: string[]): Promise<number> => {
+
+    const result = await Workout.deleteMany({ _id: { $in: ids } });
+
+    return result.deletedCount;
+
+};
+
 // Borrado definitivo: la rutina desaparece de la base de datos para siempre.
 // Los ejercicios de la rutina no se borran. Funciona tambien con rutinas ya borradas logicamente.
 export const hardDeleteWorkout = (workoutId: string): Promise<WorkoutDocument | null> => {
@@ -128,6 +146,10 @@ export default {
     softDeleteWorkout,
 
     hardDeleteWorkout,
+
+    softDeleteManyWorkouts,
+
+    hardDeleteManyWorkouts,
 
     listWorkouts
 

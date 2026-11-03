@@ -105,6 +105,84 @@ router.post('/', RequireRole('ADMIN'), ValidateJoi(Schemas.workout.create), cont
 
 /**
  * @openapi
+ * /workouts:
+ *   delete:
+ *     tags: [Workouts]
+ *     summary: Borrado lógico de varios rutinas
+ *     description: >
+ *       Marca como borrados (isDeleted) los rutinas cuyos ids se envían en el cuerpo. Los que no existen
+ *       o ya estaban borrados no cuentan. Solo ADMIN.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [ids]
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 minItems: 1
+ *                 maxItems: 100
+ *                 items: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       200:
+ *         description: Cuántos se han borrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 deleted: { type: integer }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/Unprocessable' }
+ */
+
+// Borrado logico multiple. Va antes de las rutas con :id para que "hard" no se tome por un id
+router.delete('/', RequireRole('ADMIN'), ValidateJoi(Schemas.bulkDelete), controller.softDeleteManyWorkouts);
+
+/**
+ * @openapi
+ * /workouts/hard:
+ *   delete:
+ *     tags: [Workouts]
+ *     summary: Borrado definitivo de varios rutinas
+ *     description: >
+ *       Elimina de la base de datos los rutinas cuyos ids se envían en el cuerpo. No se puede deshacer.
+ *       Solo ADMIN.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [ids]
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 minItems: 1
+ *                 maxItems: 100
+ *                 items: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       200:
+ *         description: Cuántos se han eliminado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 deleted: { type: integer }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       422: { $ref: '#/components/responses/Unprocessable' }
+ */
+
+// Borrado definitivo multiple
+router.delete('/hard', RequireRole('ADMIN'), ValidateJoi(Schemas.bulkDelete), controller.hardDeleteManyWorkouts);
+
+/**
+ * @openapi
  * /workouts/{workoutId}:
  *   get:
  *     tags: [Workouts]
