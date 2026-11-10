@@ -12,7 +12,7 @@ const router = express.Router();
  * /users:
  *   get:
  *     tags: [Users]
- *     summary: Lista los usuarios disponibles para el chat
+ *     summary: Lista los usuarios
  *     description: >
  *       Devuelve solo el id y el nombre de cada usuario, con paginación y buscador por nombre.
  *       Cualquier usuario con token puede consultarla. Un ADMIN ve también los usuarios borrados;
@@ -193,8 +193,8 @@ router.delete('/hard', RequireRole('ADMIN'), ValidateJoi(Schemas.bulkDelete), co
  */
 
 // Ruta para buscar un usuario por su ID
-// Solo ADMIN: el detalle devuelve el email y el rol de otro usuario, y eso no lo necesita el chat
-// (para el chat esta el listado de arriba, que solo lleva el id y el nombre).
+// Solo ADMIN: el detalle devuelve el email y el rol de otro usuario, y eso no lo necesita el listado
+// (para eso esta el listado de arriba, que solo lleva el id y el nombre).
 // Antes de llamar al controlador comprobamos que el ID tiene el formato correcto
 router.get('/:userId', RequireRole('ADMIN'), ValidateId('userId'), controller.readUser);
 
@@ -257,6 +257,30 @@ router.put('/:userId', RequireRole('ADMIN'), ValidateId('userId'), ValidateJoi(S
 
 // Borrado logico: solo ADMIN
 router.delete('/:userId', RequireRole('ADMIN'), ValidateId('userId'), controller.softDeleteUser);
+
+/**
+ * @openapi
+ * /users/{userId}/restore:
+ *   patch:
+ *     tags: [Users]
+ *     summary: Recupera el usuario borrado lógicamente
+ *     description: Deshace el borrado lógico (isDeleted vuelve a false). Solo ADMIN.
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       200: { description: Recuperado }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
+ */
+
+// Recuperar: solo ADMIN
+router.patch('/:userId/restore', RequireRole('ADMIN'), ValidateId('userId'), controller.restoreUser);
 
 /**
  * @openapi

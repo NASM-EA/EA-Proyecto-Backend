@@ -134,5 +134,21 @@ const hardDeleteManyExercises = async (req: Request, res: Response, next: NextFu
     }
 };
 
+// Función para recuperar el ejercicio borrado lógicamente (isDeleted vuelve a false)
+const restoreExercise = async (req: Request<{ exerciseId: string }>, res: Response, next: NextFunction) => {
+    try {
+        const exercise = await ExerciseService.restoreExercise(req.params.exerciseId);
+
+        if (exercise) {
+            // Devolvemos el ejercicio ya recuperado
+            res.status(200).json({ exercise });
+        } else {
+            res.status(404).json({ message: 'not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Exportamos todas las funciones para poder utilizarlas desde las rutas
-export default { createExercise, readExercise, updateExercise, softDeleteExercise, hardDeleteExercise, softDeleteManyExercises, hardDeleteManyExercises, listExercises };
+export default { createExercise, readExercise, updateExercise, softDeleteExercise, restoreExercise, hardDeleteExercise, softDeleteManyExercises, hardDeleteManyExercises, listExercises };

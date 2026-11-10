@@ -136,5 +136,21 @@ const hardDeleteWorkout = async (req: Request<{ workoutId: string }>, res: Respo
     }
 };
 
-export default { createWorkout, readWorkout, updateWorkout, softDeleteWorkout, hardDeleteWorkout, softDeleteManyWorkouts, hardDeleteManyWorkouts, listWorkouts };
+// Función para recuperar la rutina borrado lógicamente (isDeleted vuelve a false)
+const restoreWorkout = async (req: Request<{ workoutId: string }>, res: Response, next: NextFunction) => {
+    try {
+        const workout = await WorkoutService.restoreWorkout(req.params.workoutId);
+
+        if (workout) {
+            // Devolvemos el rutina ya recuperado
+            res.status(200).json({ workout });
+        } else {
+            res.status(404).json({ message: 'not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+export default { createWorkout, readWorkout, updateWorkout, softDeleteWorkout, restoreWorkout, hardDeleteWorkout, softDeleteManyWorkouts, hardDeleteManyWorkouts, listWorkouts };
 

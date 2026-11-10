@@ -56,23 +56,26 @@ Todo salvo `/auth/*`, `/ping` y `/api-docs` pide el token en la cabecera `Author
 | POST | `/auth/login` | cualquiera | Devuelve `{ token, refreshToken, user }` o 401 |
 | POST | `/auth/admin/login` | solo `ADMIN` | Login del backoffice: 200 igual que `/auth/login`, 401 si las credenciales no son correctas, 403 si el usuario no es `ADMIN` |
 | POST | `/auth/refresh` | su refresh token | Devuelve un `{ token }` nuevo o 401 |
-| GET | `/users` | cualquier sesión | Lista de usuarios para el chat: solo `_id` y `name`. Un `ADMIN` ve todos; el resto, solo los activos |
+| GET | `/users` | cualquier sesión | Lista de usuarios: solo `_id` y `name`. Un `ADMIN` ve todos; el resto, solo los activos |
 | POST | `/users` | `ADMIN` | Crea un usuario: 201 `{ user }` |
 | GET | `/users/:userId` | `ADMIN` | Devuelve `{ user }` o 404 |
 | PUT | `/users/:userId` | `ADMIN` | Actualiza el usuario; devuelve `{ user }` y 404 si no existe |
 | DELETE | `/users/:userId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404. Un admin no puede borrarse a sí mismo |
+| PATCH | `/users/:userId/restore` | `ADMIN` | Recupera el usuario borrado (`isDeleted: false`): 200 o 404; 409 si ya hay otro activo con el mismo nombre/email |
 | DELETE | `/users/:userId/hard` | `ADMIN` | Borrado definitivo de la base de datos: 204 o 404 |
 | GET | `/exercises` | cualquier sesión | Lista paginada de ejercicios, con buscador y filtro por categoría. Un `ADMIN` ve todos; el resto, solo los activos |
 | POST | `/exercises` | `ADMIN` | Crea un ejercicio: 201 `{ exercise }` |
 | GET | `/exercises/:exerciseId` | cualquier sesión | Devuelve `{ exercise }` o 404. Si el ejercicio está borrado, 404 para quien no es `ADMIN` |
 | PUT | `/exercises/:exerciseId` | `ADMIN` | Actualiza el ejercicio; devuelve `{ exercise }` y 404 si no existe o está borrado |
 | DELETE | `/exercises/:exerciseId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404 |
+| PATCH | `/exercises/:exerciseId/restore` | `ADMIN` | Recupera el ejercicio borrado (`isDeleted: false`): 200 o 404; 409 si ya hay otro activo con el mismo nombre/email |
 | DELETE | `/exercises/:exerciseId/hard` | `ADMIN` | Borrado definitivo; lo quita también de las rutinas: 204 o 404 |
 | GET | `/workouts` | cualquier sesión | Lista paginada de rutinas, con buscador y filtro por día. Un `ADMIN` ve todas; el resto, solo las activas |
 | POST | `/workouts` | `ADMIN` | Crea una rutina: 201 `{ workout }` |
 | GET | `/workouts/:workoutId` | cualquier sesión | Devuelve `{ workout }` con sus ejercicios completos. Si la rutina está borrada, 404 para quien no es `ADMIN` |
 | PUT | `/workouts/:workoutId` | `ADMIN` | Actualiza la rutina; devuelve `{ workout }` y 404 si no existe o está borrada |
 | DELETE | `/workouts/:workoutId` | `ADMIN` | Borrado lógico (`isDeleted`): 204 o 404 |
+| PATCH | `/workouts/:workoutId/restore` | `ADMIN` | Recupera la rutina borrado (`isDeleted: false`): 200 o 404; 409 si ya hay otro activo con el mismo nombre/email |
 | DELETE | `/workouts/:workoutId/hard` | `ADMIN` | Borrado definitivo de la base de datos: 204 o 404 |
 | GET | `/ping` | cualquiera | Healthcheck: `{ hello: 'world' }` |
 
@@ -86,7 +89,7 @@ para todo el mundo; lo que cambia es el contenido según el rol que va dentro de
   detalle responde 404, como si no existiera.
 
 Un elemento está **activo** cuando su campo `isDeleted` es `false`. El borrado es siempre lógico: el documento
-sigue en MongoDB con `isDeleted: true` y `deletedAt` con la fecha, y la API **no tiene ninguna ruta `DELETE`**.
+sigue en MongoDB con `isDeleted: true` y `deletedAt` con la fecha, y se puede recuperar con `PATCH /:id/restore` (`isDeleted` vuelve a `false`).
 Las escrituras (`POST` y `PUT`) son solo de `ADMIN`.
 
 Sin sesión, cualquier ruta salvo `/auth/*`, `/ping` y `/api-docs` responde 401: el token se comprueba antes de
@@ -105,7 +108,7 @@ Los cuerpos que se envían:
 
 ```
 src/
-  server.ts        Punto de entrada: conecta con MongoDB, registra middleware y rutas, y arranca el servidor y el chat
+  server.ts        Punto de entrada: conecta con MongoDB, registra middleware y rutas, y arranca el servidor
   seed.ts          Script que llena la base de datos con los datos de ejemplo
   migrate-roles.ts Script de una sola vez: pasa los roles antiguos (admin, user) a ADMIN y USER
   seed-data.ts     Los datos de ejemplo: usuarios, ejercicios y rutinas
@@ -121,16 +124,15 @@ src/
   services/        Leen y escriben en la base de datos a través de los modelos. No saben que existe HTTP
     AuthService.ts, UserService.ts, ExerciseService.ts, WorkoutService.ts
   models/          Esquemas de Mongoose: qué campos tiene cada documento y de qué tipo
-    User.ts, Exercise.ts, Workout.ts, Message.ts
+    User.ts, Exercise.ts, Workout.ts
   middleware/      Lo que se ejecuta entre la ruta y el controlador
     VerifyToken.ts   Comprueba el token de la cabecera Authorization y deja el usuario en req.user (401)
     RequireRole.ts   Deja pasar solo a un rol concreto (403)
     Joi.ts           Guardas: validan el body (422) y el id de la URL (400)
-    SocketAuth.ts    Lo mismo que VerifyToken, para la conexión del chat
     Cors.ts          Cabeceras de CORS, configuradas con CORS_ORIGIN
     Logger.ts        Escribe en consola cada petición y su código de respuesta
     ErrorHandler.ts  Convierte cualquier error en su código: 400, 401, 404, 409, 422 o 500
-  types/           Tipos compartidos: el payload de los tokens, los eventos del chat y req.user de Express
+  types/           Tipos compartidos: el payload de los tokens, y req.user de Express
   utils/
     password.ts      Cifra y comprueba contraseñas con scrypt
 ```

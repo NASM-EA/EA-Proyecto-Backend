@@ -12,10 +12,6 @@ import exerciseRoutes from './routes/Exercise';
 import workoutRoutes from './routes/Workout';
 import swaggerUi from 'swagger-ui-express'; // permite mostrar Swagger en el navegador.
 import swaggerDocument from './config/swagger'; // importa el documento que hemos creado en swagger.ts
-import { Server } from 'socket.io';
-import { VerifySocketToken } from './middleware/SocketAuth';
-import Message from './models/Message';
-import type { ChatJoinPayload, ChatMessagePayload } from './types/chat';
 const router = express();
 import userRoutes from './routes/Users';
 
@@ -48,7 +44,7 @@ const StartServer = () => {
     // Las escrituras siguen siendo solo de ADMIN y eso se comprueba en cada router.
     router.use('/exercises', VerifyToken, exerciseRoutes);
     router.use('/workouts', VerifyToken, workoutRoutes);
-    // La lista de usuarios es para el chat, así que cualquier usuario autenticado puede consultarla.
+    // La lista de usuarios (solo id y nombre) la puede consultar cualquier usuario autenticado.
     // Las escrituras (POST y PUT) y el detalle por id son solo para ADMIN, y eso se comprueba
     // en src/routes/Users.ts, porque aquí el montaje es el mismo para todas las rutas del router.
     router.use('/users', VerifyToken, userRoutes);
@@ -81,99 +77,5 @@ const StartServer = () => {
     router.use(ErrorHandler);
 
     const server = http.createServer(router);
-const io = new Server(server, {
-    cors: {
-        origin: config.cors.origin,
-        methods: ['GET', 'POST']
-    }
-});
-
-io.use(VerifySocketToken);
-
-io.on('connection', (socket) => {
-    // El middleware JWT ya comprobó la identidad antes de permitir esta conexión.
-    const userId = socket.data.user.id;
-    Logging.info(`Socket connected for user ${userId}`);
-
-    // El cliente pide entrar a una sala, por ejemplo "general".
-    socket.on('chat:join', async (payload: ChatJoinPayload) => {
-        // Los tipos de TypeScript no validan los datos que llegan por la red;
-        // comprobamos también que la sala realmente sea un texto.
-        if (!payload || typeof payload.room !== 'string' || payload.room.trim().length === 0) {
-            socket.emit('chat:error', { message: 'La sala indicada no es válida.' });
-            return;
-        }
-
-        const room = payload.room.trim();
-
-        try {
-            // Socket.IO se encarga de añadir esta conexión a la sala.
-            await socket.join(room);
-
-            // Buscamos los 50 mensajes más recientes y los ordenamos del más antiguo al más nuevo.
-            const history = await Message.find({ room })
-                .sort({ timestamp: -1 })
-                .limit(50)
-                .populate('user', 'name')
-                .lean();
-
-            // Devolvemos el historial solo a quien acaba de entrar, en orden cronológico.
-            socket.emit('chat:history', history.reverse());
-        } catch (error) {
-            // Registramos el fallo en el servidor y avisamos al cliente sin exponer detalles internos.
-            Logging.error(error);
-            socket.emit('chat:error', { message: 'No se pudo cargar el historial de la sala.' });
-        }
-    });
-
-        // El cliente envía el mensaje y la sala donde quiere publicarlo.
-    socket.on('chat:message', async (payload: ChatMessagePayload) => {
-        // Los tipos de TypeScript no comprueban los datos que llegan desde la red.
-        if (
-            !payload ||
-            typeof payload.room !== 'string' ||
-            typeof payload.text !== 'string' ||
-            payload.room.trim().length === 0 ||
-            payload.text.trim().length === 0
-        ) {
-            socket.emit('chat:error', { message: 'La sala y el texto del mensaje son obligatorios.' });
-            return;
-        }
-
-        const room = payload.room.trim();
-        const text = payload.text.trim();
-
-        // Solo se permite escribir en salas a las que este socket ya se unió.
-        if (!socket.rooms.has(room)) {
-            socket.emit('chat:error', { message: 'Debes entrar a la sala antes de enviar mensajes.' });
-            return;
-        }
-
-        try {
-            // El usuario que escribe sale del JWT verificado, nunca de los datos enviados por el cliente.
-            const message = await Message.create({
-                room,
-                user: userId,
-                text
-            });
-
-            // Cargamos el nombre del usuario para enviar datos parecidos a los del historial.
-            await message.populate('user', 'name');
-
-            // Se emite el mensaje ya guardado a todos los sockets conectados a esa sala.
-            io.to(room).emit('chat:message', message);
-        } catch (error) {
-            // El detalle queda en el log del servidor; al cliente solo le enviamos un aviso.
-            Logging.error(error);
-            socket.emit('chat:error', { message: 'No se pudo guardar el mensaje.' });
-        }
-    });
-
-    // Dejamos registrado cuándo se desconecta un usuario.
-    socket.on('disconnect', () => {
-        Logging.info(`Socket disconnected for user ${userId}`);
-    });
-});
-
 server.listen(config.server.port, () => Logging.info(`Server is running on port ${config.server.port}`));
 };
