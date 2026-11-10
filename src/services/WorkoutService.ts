@@ -134,6 +134,15 @@ export const listWorkouts = async ({ page, limit, search, dayOfWeek, sort, order
 
 };
 
+// Recuperar: deshace el borrado logico, o sea isDeleted vuelve a false.
+// Devuelve null si no existe o si no estaba borrado.
+// Si ya hay otro activo con el mismo nombre/email, MongoDB da error 11000 (409).
+export const restoreWorkout = (workoutId: string): Promise<WorkoutDocument | null> => {
+
+    return Workout.findOneAndUpdate({ _id: workoutId, isDeleted: true }, { isDeleted: false, deletedAt: null }, { new: true });
+
+};
+
 // Exportamos todas las funciones para poder utilizarlas desde el controlador
 export default {
 
@@ -144,6 +153,8 @@ export default {
     updateWorkout,
 
     softDeleteWorkout,
+
+    restoreWorkout,
 
     hardDeleteWorkout,
 

@@ -277,6 +277,30 @@ router.delete('/:workoutId', RequireRole('ADMIN'), ValidateId('workoutId'), cont
 
 /**
  * @openapi
+ * /workouts/{workoutId}/restore:
+ *   patch:
+ *     tags: [Workouts]
+ *     summary: Recupera la rutina borrado lógicamente
+ *     description: Deshace el borrado lógico (isDeleted vuelve a false). Solo ADMIN.
+ *     parameters:
+ *       - in: path
+ *         name: workoutId
+ *         required: true
+ *         schema: { type: string, pattern: '^[0-9a-fA-F]{24}$' }
+ *     responses:
+ *       200: { description: Recuperado }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       401: { $ref: '#/components/responses/Unauthorized' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
+ */
+
+// Recuperar: solo ADMIN
+router.patch('/:workoutId/restore', RequireRole('ADMIN'), ValidateId('workoutId'), controller.restoreWorkout);
+
+/**
+ * @openapi
  * /workouts/{workoutId}/hard:
  *   delete:
  *     tags: [Workouts]

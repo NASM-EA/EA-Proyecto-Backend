@@ -4,7 +4,7 @@ import Logging from '../library/Logging';
 import { hashPassword } from '../utils/password';
 
 // Roles que puede tener un usuario.
-// ADMIN gestiona el backoffice (ejercicios, rutinas y usuarios); USER solo puede usar el chat.
+// ADMIN gestiona el backoffice (ejercicios, rutinas y usuarios); USER no tiene acceso al backoffice.
 export const USER_ROLES = ['ADMIN', 'USER'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
@@ -25,7 +25,7 @@ export interface IUserModel extends IUser, Document {}
 
 const UserSchema: Schema = new Schema(
     {
-        // El nombre es el que se ve en la aplicacion (por ejemplo, en el chat)
+        // El nombre es el que se ve en la aplicacion (por ejemplo, en la lista de usuarios)
         name: { type: String, required: true, trim: true },
 
         // El email es con lo que se inicia sesion, asi que no puede repetirse.

@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import UserService from '../services/UserService';
 
 // Devuelve los datos básicos de los usuarios (id y nombre) con paginación y buscador,
-// para que el frontend pueda mostrarlos y usarlos al iniciar un chat directo.
+// para que el frontend pueda mostrarlos.
 const listUsers = async (req: Request, res: Response, next: NextFunction) => {
     try {
         // El servicio necesita saber el rol de la sesion: el ADMIN ve todos los usuarios
@@ -153,5 +153,21 @@ const hardDeleteManyUsers = async (req: Request, res: Response, next: NextFuncti
     }
 };
 
+// Función para recuperar el usuario borrado lógicamente (isDeleted vuelve a false)
+const restoreUser = async (req: Request<{ userId: string }>, res: Response, next: NextFunction) => {
+    try {
+        const user = await UserService.restoreUser(req.params.userId);
+
+        if (user) {
+            // Devolvemos el usuario ya recuperado
+            res.status(200).json({ user });
+        } else {
+            res.status(404).json({ message: 'not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Exportamos todas las funciones para poder utilizarlas desde las rutas
-export default { listUsers, createUser, readUser, updateUser, softDeleteUser, hardDeleteUser, softDeleteManyUsers, hardDeleteManyUsers };
+export default { listUsers, createUser, readUser, updateUser, softDeleteUser, restoreUser, hardDeleteUser, softDeleteManyUsers, hardDeleteManyUsers };

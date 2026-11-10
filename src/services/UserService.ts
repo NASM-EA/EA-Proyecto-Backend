@@ -99,11 +99,11 @@ export const updateUser = (userId: string, data: UpdateUserInput): Promise<Hydra
 // (sort es la columna por la que ordenar y order el sentido: asc o desc)
 export type ListUsersInput = { page: number; limit: number; search?: string; sort?: string; order?: 'asc' | 'desc' };
 
-// Devuelve una pagina de usuarios para el chat: solo _id y name.
+// Devuelve una pagina de usuarios: solo _id y name.
 // El buscador mira SOLO el nombre: este listado lo puede llamar cualquier usuario con sesion
 // y no debe permitir descubrir emails de otros (por eso tampoco hay filtro por rol).
 // El ADMIN ve todos los usuarios, tambien los borrados logicamente; cualquier otra sesion
-// solo ve los activos, que es lo que necesita el chat.
+// solo ve los activos.
 export const listUsers = async ({ page, limit, search, sort, order }: ListUsersInput, isAdmin: boolean) => {
 
     // El ADMIN consulta todo, asi que su filtro empieza vacio; el resto empieza solo con los activos
@@ -125,6 +125,15 @@ export const listUsers = async ({ page, limit, search, sort, order }: ListUsersI
 
 };
 
+// Recuperar: deshace el borrado logico, o sea isDeleted vuelve a false.
+// Devuelve null si no existe o si no estaba borrado.
+// Si ya hay otro activo con el mismo nombre/email, MongoDB da error 11000 (409).
+export const restoreUser = (userId: string): Promise<HydratedDocument<IUserModel> | null> => {
+
+    return User.findOneAndUpdate({ _id: userId, isDeleted: true }, { isDeleted: false, deletedAt: null }, { new: true });
+
+};
+
 // Exportamos todas las funciones para poder utilizarlas desde el controlador
 export default {
 
@@ -135,6 +144,8 @@ export default {
     updateUser,
 
     softDeleteUser,
+
+    restoreUser,
 
     hardDeleteUser,
 
